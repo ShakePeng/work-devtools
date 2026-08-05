@@ -1,0 +1,127 @@
+.nvmrc
+  s_6f20a79a2100bc::t_4d70b58ae726ae 1
+.yarnrc
+  s_6f20a79a2100bc::t_9870dd8f32f0ea 1
+postcss.config.js
+  s_6f20a79a2100bc::t_d76047d1be8a25 1-6
+scripts/generate-icons.mjs
+  s_6f20a79a2100bc::t_e07ef6d8f5addf 1-25
+scripts/icon.svg
+  s_6f20a79a2100bc::t_86acaec6eb9f01 1-24
+src/assets/main.css
+  s_6f20a79a2100bc::t_aa406118d1bd7b 1-163
+src/entrypoints/background.ts
+  s_6f20a79a2100bc::t_b21086157d7bd4 1-5
+src/entrypoints/bridge-session.content.ts
+  s_6f20a79a2100bc::t_03fa3326256356 1-30
+src/entrypoints/manager/main.ts
+  s_6f20a79a2100bc::t_382bce7c3bb657 1-5
+src/entrypoints/popup/main.ts
+  s_6f20a79a2100bc::t_e438246fdc00bf 1-5
+src/manager/components/BridgeProfilePanel.vue
+  s_6f20a79a2100bc::t_565d961c173919 1-380
+src/manager/components/CookieManager.vue
+  s_6f20a79a2100bc::t_0dbf90f19f2425 1-393
+src/manager/components/CookieProfilePanel.vue
+  s_6f20a79a2100bc::t_43500ef4b6ac52 1-300
+src/manager/components/DataManagerContent.vue
+  s_6f20a79a2100bc::t_c62f4c6e140b6c 1-389
+src/manager/components/DataManagerNavigation.vue
+  s_6f20a79a2100bc::t_4241f070c0eb32 1-100
+src/manager/components/DeviceProfilePanel.vue
+  s_6f20a79a2100bc::t_0c1bf665fc3b3f 1-132
+src/manager/components/EntityEditorDrawer.vue
+  s_6f20a79a2100bc::t_eece6a249402e3 1-664
+src/manager/components/PersonManager.vue
+  s_6f20a79a2100bc::t_fa05fceee70956 1-181
+src/manager/components/PlatformManager.vue
+  s_6f20a79a2100bc::t_bdd7b565f1cac9 1-217
+src/manager/components/Toast.vue
+  s_6f20a79a2100bc::t_a40fe018884b92 1-66
+src/manager/components/data-manager-types.ts
+  s_6f20a79a2100bc::t_e6b98164df6c26 1-44
+src/popup/components/BridgeList.vue
+  s_6f20a79a2100bc::t_5ba5b5453a66f3 1-42
+src/popup/components/BridgeViewModal.vue
+  s_6f20a79a2100bc::t_7da21805f2a0fd 1-75
+src/popup/components/ConfirmDialog.vue
+  s_6f20a79a2100bc::t_ca8447ee85a30e 1-48
+src/popup/components/CookieChip.vue
+  s_6f20a79a2100bc::t_c43a71956ec4ca 1-29
+src/popup/components/CookieFormModal.vue
+  s_6f20a79a2100bc::t_8fd71148a07272 1-275
+src/popup/components/CookieList.vue
+  s_6f20a79a2100bc::t_7abf905ff9d87b 1-44
+src/popup/components/CookieViewModal.vue
+  s_6f20a79a2100bc::t_e0998020065a93 1-232
+src/popup/components/PersonCard.vue
+  s_6f20a79a2100bc::t_941880e5d64bc8 1-114
+src/popup/components/PlatformCard.vue
+  s_6f20a79a2100bc::t_4df1ebfd6c703e 1-203
+src/popup/components/PlatformList.vue
+  s_6f20a79a2100bc::t_233cb7994b25f0 1-125
+src/popup/components/Toast.vue
+  s_6f20a79a2100bc::t_edbc82ba2f4b54 1-62
+src/shared/bridgeProfiles.ts
+  s_6f20a79a2100bc::t_7c36fc85e6077d 1-219
+src/shared/composables/useBridgeProfiles.ts
+  s_6f20a79a2100bc::t_46d2922f5339bd 1-140
+src/shared/composables/useCookieProfiles.ts
+  s_6f20a79a2100bc::t_b42d337a7c2e85 1-112
+src/shared/composables/useCookies.ts
+  s_6f20a79a2100bc::t_17abaeb77425e7 1-91
+src/shared/composables/useDeviceProfiles.ts
+  s_6f20a79a2100bc::t_563bc2a6d46694 1-51
+src/shared/composables/usePersons.ts
+  s_6f20a79a2100bc::t_ae492c861188a5 1-83
+src/shared/composables/usePlatforms.ts
+  s_6f20a79a2100bc::t_fa87f9235dd873 1-131
+src/shared/constants/platforms.ts
+  s_6f20a79a2100bc::t_7cc3c993985427 1-8
+src/shared/cookieInjection.ts
+  s_6f20a79a2100bc::t_25d698b7847af2 1-10
+src/shared/cookieProfiles.ts
+  s_6f20a79a2100bc::t_4cd854c5d487de 1-140
+src/shared/deviceProfiles.ts
+  s_6f20a79a2100bc::t_ed304c518c85fc 1-44
+src/vite-env.d.ts
+  s_6f20a79a2100bc::t_627c18f548cfd8 1-7
+tailwind.config.js
+  s_6f20a79a2100bc::t_304c9e2e0d7f76 1-65
+tests/cookie-injection.test.mjs
+  s_6f20a79a2100bc::t_e9af3d9fa056f0 1-33
+tests/cookie-profiles.test.mjs
+  s_6f20a79a2100bc::t_0b9d6b47427e22 1-79
+tests/member-wx-removal.test.mjs
+  s_6f20a79a2100bc::t_40b82e09cd93b3 1-18
+tests/platform-modes.test.mjs
+  s_6f20a79a2100bc::t_46e2da7d730f56 1-26
+tests/platforms.test.mjs
+  s_6f20a79a2100bc::t_609de83b7844e5 1-28
+tsconfig.json
+  s_6f20a79a2100bc::t_feb35ace9e0f09 1-9
+.gitignore
+  s_6f20a79a2100bc::t_54bc2ef5b3d768 1-11
+README.md
+  s_6f20a79a2100bc::t_e64b9dd0a0d456 1-220
+src/manager/App.vue
+  s_6f20a79a2100bc::t_ede651ff459e96 1-266
+tests/work-devtools-branding.test.mjs
+  s_6f20a79a2100bc::t_ac7e2458c6f1b5 1-75
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "ccc4dd3ed78d356ccb74774efe952c793dfac34a",
+  "prompts": {},
+  "sessions": {
+    "s_6f20a79a2100bc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fcfe7-939b-70b3-a241-3e1cff746b0c",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "彭振东 <pzd6391@ly.com>"
+    }
+  }
+}
