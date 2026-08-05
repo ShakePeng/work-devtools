@@ -1,0 +1,93 @@
+README.md
+  s_bd76ec03b7208f::t_3dd338ba9fb351 5,7,21-23,26-28,62,124,156-159,162-163,173,184-186,192,252-253
+  s_bd76ec03b7208f::t_920cd1401081cd 24
+  s_bd76ec03b7208f::t_f95c276ed5b235 25,160-161
+src/shared/composables/useImportExport.ts
+  s_bd76ec03b7208f::t_5af3b19da29bf1 23-26,97-101,150,164-168,204
+src/shared/webdav-client.ts
+  s_bd76ec03b7208f::t_323e017c6bc368 211,214
+  s_bd76ec03b7208f::t_51ef442790ef37 14
+  s_bd76ec03b7208f::t_6c9349f4017b48 13,16-49,51-55,57,59,61-62,64,66-67,69,71,75,80-89,210
+src/shared/devAddresses.ts
+  s_bd76ec03b7208f::t_4a9cc64302766a 1-32,34-49,52-80,93-159,161-244
+  s_bd76ec03b7208f::t_22179ebd15f205 33,50-51,81-92
+  s_bd76ec03b7208f::t_51ef442790ef37 160
+src/manager/App.vue
+  s_bd76ec03b7208f::t_01d9383a4dfbe4 16,23,25,46,53,102-110,266-272
+  s_bd76ec03b7208f::t_f8820ef6ddc936 12-15,28,42,126-133,209,243
+  s_bd76ec03b7208f::t_48267bdf0e88cf 230
+src/shared/types/index.ts
+  s_bd76ec03b7208f::t_ceb3463e997516 133-164,172,177,194-195
+wxt.config.ts
+  s_bd76ec03b7208f::t_ad43282255025c 13
+  s_bd76ec03b7208f::t_6cd7807f32410e 21
+src/background/index.ts
+  s_bd76ec03b7208f::t_d3d10730c74c5a 4-25,29-49,141-147
+tests/storage-local.test.mjs
+  s_bd76ec03b7208f::t_eb85ab25353261 58,61,75-76
+src/shared/workspaceData.ts
+  s_bd76ec03b7208f::t_ab0d97b286efcc 4,7-11,45,53-59,75-76,81,90-104
+  s_bd76ec03b7208f::t_144ccd400c6b6e 52
+tests/workspace-data.test.mjs
+  s_bd76ec03b7208f::t_58b4d97dd42dd5 1-2,4,11-13,16-60
+  s_bd76ec03b7208f::t_ef43065a570323 3,5-10,14-15
+src/manager/components/DevAddressManager.vue
+  s_bd76ec03b7208f::t_81505a52fe1c7c 541,548
+  s_bd76ec03b7208f::t_2f0522dc9c68f7 230,429,431-432,435-455
+  s_bd76ec03b7208f::t_51f6ec2634a112 1-161,165-229,231-285,300-428,430,433-434,456-482,484-496,498-506,508-540,542-547,549-595
+  s_bd76ec03b7208f::t_48267bdf0e88cf 162-164,286-299,497
+  s_bd76ec03b7208f::t_f95c276ed5b235 483,507
+src/manager/components/UnifiedTreeManager.vue
+  s_bd76ec03b7208f::t_bdb8b6b2a9f2ef 918,969-970,973-977,980-981
+  s_bd76ec03b7208f::t_5cb3137c1ce83f 600,602-605,610,614-615,617,620-622,626-627,630-635,638-641,832,836-838
+  s_bd76ec03b7208f::t_ce503a3288a64d 2,7,49-51,79-82,140,157-159
+tests/work-devtools-branding.test.mjs
+  s_bd76ec03b7208f::t_44cc37833366b7 72,75-80
+  s_bd76ec03b7208f::t_db78009e26c750 68
+  s_bd76ec03b7208f::t_eb85ab25353261 44-45,52-56
+  s_bd76ec03b7208f::t_e762f5e3768ee7 57-58
+tests/webdav-client.test.mjs
+  s_bd76ec03b7208f::t_eb85ab25353261 105-111
+src/manager/components/ImportExportPanel.vue
+  s_bd76ec03b7208f::t_d308b9a4bf0040 152,159,163-164,205
+src/shared/managerNavigation.ts
+  s_bd76ec03b7208f::t_6cd7807f32410e 1-27
+src/shared/composables/useLocalStorage.ts
+  s_bd76ec03b7208f::t_f932a9c6da9c88 2,16,159,172,174-175,267,281,349-359,379,384,391
+  s_bd76ec03b7208f::t_44cc37833366b7 317
+docs/releases/1.0.1.md
+  s_bd76ec03b7208f::t_f95c276ed5b235 10,12,32
+  s_bd76ec03b7208f::t_1770724a10ea01 21
+  s_bd76ec03b7208f::t_d1a6ed1a905e31 33-36
+  s_bd76ec03b7208f::t_44cc37833366b7 18-19
+  s_bd76ec03b7208f::t_ad43282255025c 1-9,13-17,20,22-31,37-43
+  s_bd76ec03b7208f::t_920cd1401081cd 11
+tests/tool-context-menu.test.mjs
+  s_bd76ec03b7208f::t_eb85ab25353261 1-31,33-34,37-38,43
+  s_bd76ec03b7208f::t_db78009e26c750 32,35-36,39-42
+  s_bd76ec03b7208f::t_94954ef0ca7029 44-50
+src/popup/App.vue
+  s_bd76ec03b7208f::t_8f033b88273ec1 8,24,57-59,139
+tests/dev-addresses.test.mjs
+  s_bd76ec03b7208f::t_51ef442790ef37 73
+  s_bd76ec03b7208f::t_0c05f7659ed990 1-43,45-46,51-58,67-72,74-155
+  s_bd76ec03b7208f::t_13c6a92f8d081a 44,47-50,59-66
+package.json
+  s_bd76ec03b7208f::t_ceb3463e997516 4
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "4d09a0ee29eec0d3f21df923145a39669b45f9b1",
+  "prompts": {},
+  "sessions": {
+    "s_bd76ec03b7208f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fd12e-f024-7ac1-a6bc-f3d34c7637f9",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "彭振东 <pzd6391@ly.com>"
+    }
+  }
+}
