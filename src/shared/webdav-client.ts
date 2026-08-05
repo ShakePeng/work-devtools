@@ -10,37 +10,83 @@ export interface WebDavRemoteFile {
 
 type WebDavCredentials = Pick<WebDavSyncConfig, 'endpoint' | 'username' | 'password'>
 
-function isWorkDevToolsData(value: unknown): value is WorkDevToolsData {
+function hasDevAddressesShape(value: unknown): boolean {
+  if (typeof value == 'undefined') return true
   if (!value || typeof value != 'object') return false
+  const data = value as Record<string, unknown>
+  if (!Array.isArray(data.projects)) return false
+
+  return data.projects.every(projectValue => {
+    if (!projectValue || typeof projectValue != 'object') return false
+    const project = projectValue as Record<string, unknown>
+    if (typeof project.id != 'string' || typeof project.name != 'string') return false
+    if (typeof project.defaultEnvironmentId != 'string') return false
+    if (!Array.isArray(project.environments) || !project.environments.length) return false
+    if (!Array.isArray(project.pages)) return false
+    const environmentsValid = project.environments.every(environmentValue => {
+      if (!environmentValue || typeof environmentValue != 'object') return false
+      const environment = environmentValue as Record<string, unknown>
+      return typeof environment.id == 'string'
+        && typeof environment.name == 'string'
+        && typeof environment.baseUrl == 'string'
+    })
+    const pagesValid = project.pages.every(pageValue => {
+      if (!pageValue || typeof pageValue != 'object') return false
+      const page = pageValue as Record<string, unknown>
+      return typeof page.id == 'string'
+        && typeof page.name == 'string'
+        && typeof page.path == 'string'
+    })
+    return environmentsValid
+      && pagesValid
+      && project.environments.some(environment =>
+        (environment as Record<string, unknown>).id == project.defaultEnvironmentId
+      )
+  })
+}
+
+function resolveRemoteWorkDevToolsData(value: unknown): WorkDevToolsData | null {
+  if (!value || typeof value != 'object') return null
   const root = value as Record<string, unknown>
-  if (typeof root.version != 'number' || typeof root.updatedAt != 'number') return false
-  if (!root.tools || typeof root.tools != 'object') return false
-  const cookieInjector = (root.tools as Record<string, unknown>).cookieInjector
-  if (!cookieInjector || typeof cookieInjector != 'object') return false
+  if (typeof root.version != 'number' || typeof root.updatedAt != 'number') return null
+  if (!root.tools || typeof root.tools != 'object') return null
+  const tools = root.tools as Record<string, unknown>
+  const cookieInjector = tools.cookieInjector
+  if (!cookieInjector || typeof cookieInjector != 'object') return null
   const data = cookieInjector as Record<string, unknown>
-  if (!Array.isArray(data.persons)) return false
+  if (!Array.isArray(data.persons)) return null
   for (const personValue of data.persons) {
-    if (!personValue || typeof personValue != 'object') return false
+    if (!personValue || typeof personValue != 'object') return null
     const person = personValue as Record<string, unknown>
-    if (typeof person.id != 'string' || typeof person.name != 'string') return false
-    if (!Array.isArray(person.platforms)) return false
+    if (typeof person.id != 'string' || typeof person.name != 'string') return null
+    if (!Array.isArray(person.platforms)) return null
     for (const platformValue of person.platforms) {
-      if (!platformValue || typeof platformValue != 'object') return false
+      if (!platformValue || typeof platformValue != 'object') return null
       const platform = platformValue as Record<string, unknown>
-      if (typeof platform.id != 'string' || typeof platform.name != 'string') return false
-      if (!Array.isArray(platform.cookies)) return false
+      if (typeof platform.id != 'string' || typeof platform.name != 'string') return null
+      if (!Array.isArray(platform.cookies)) return null
       for (const cookieValue of platform.cookies) {
-        if (!cookieValue || typeof cookieValue != 'object') return false
+        if (!cookieValue || typeof cookieValue != 'object') return null
         const cookie = cookieValue as Record<string, unknown>
-        if (typeof cookie.id != 'string') return false
+        if (typeof cookie.id != 'string') return null
       }
     }
   }
-  return (!data.deviceProfiles || Array.isArray(data.deviceProfiles))
+  const cookieShapeValid = (!data.deviceProfiles || Array.isArray(data.deviceProfiles))
     && (!data.bridgeProviders || Array.isArray(data.bridgeProviders))
     && (!data.bridgeMethods || Array.isArray(data.bridgeMethods))
     && (!data.cookiePresetGroups || Array.isArray(data.cookiePresetGroups))
     && (!data.cookiePresets || Array.isArray(data.cookiePresets))
+  if (!cookieShapeValid || !hasDevAddressesShape(tools.devAddresses)) return null
+
+  return {
+    ...(root as unknown as WorkDevToolsData),
+    tools: {
+      ...tools,
+      cookieInjector: cookieInjector as WorkDevToolsData['tools']['cookieInjector'],
+      devAddresses: (tools.devAddresses || { projects: [] }) as WorkDevToolsData['tools']['devAddresses'],
+    },
+  }
 }
 
 function encodeBasicAuth(username: string, password: string): string {
@@ -161,10 +207,11 @@ export async function readWebDavFile(config: WebDavCredentials): Promise<WebDavR
   } catch {
     throw new Error('WebDAV 同步文件不是有效的 JSON')
   }
-  if (!isWorkDevToolsData(raw)) throw new Error('WebDAV 同步文件格式不正确')
+  const data = resolveRemoteWorkDevToolsData(raw)
+  if (!data) throw new Error('WebDAV 同步文件格式不正确')
 
   return {
-    data: raw,
+    data,
     etag: response.headers.get('etag'),
     lastModified: response.headers.get('last-modified'),
   }

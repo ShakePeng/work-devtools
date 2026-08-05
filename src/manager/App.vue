@@ -9,24 +9,23 @@ import { useBridgeProfiles } from '@shared/composables/useBridgeProfiles'
 import { useCookieProfiles } from '@shared/composables/useCookieProfiles'
 import { useImportExport } from '@shared/composables/useImportExport'
 import { useWebDavSync } from '@shared/composables/useWebDavSync'
-import { FolderTree, Database, DatabaseBackup, Smartphone, Code2, Cookie } from 'lucide-vue-next'
+import {
+  type ManagerNavKey,
+  parseManagerNav,
+} from '@shared/managerNavigation'
+import { FolderTree, Database, DatabaseBackup, Smartphone, Code2, Cookie, Link2 } from 'lucide-vue-next'
 import UnifiedTreeManager from './components/UnifiedTreeManager.vue'
 import BackupSyncPanel from './components/BackupSyncPanel.vue'
 import Toast from './components/Toast.vue'
 import DeviceProfilePanel from './components/DeviceProfilePanel.vue'
 import BridgeProfilePanel from './components/BridgeProfilePanel.vue'
 import CookieProfilePanel from './components/CookieProfilePanel.vue'
+import DevAddressManager from './components/DevAddressManager.vue'
 
-type ToolKey = 'cookie-injector'
-type NavKey =
-  | 'cookie-injector:data'
-  | 'cookie-injector:cookies'
-  | 'cookie-injector:bridges'
-  | 'cookie-injector:devices'
-  | 'backup-sync'
+type ToolKey = 'cookie-injector' | 'dev-addresses'
 
 interface NavItem {
-  key: NavKey
+  key: ManagerNavKey
   label: string
   description: string
   icon: any
@@ -40,16 +39,18 @@ interface ToolNavGroup {
   children: NavItem[]
 }
 
-const activeNav = ref<NavKey>('cookie-injector:data')
+const activeNav = ref<ManagerNavKey>(parseManagerNav(window.location.search))
 
 const {
   data,
+  devAddresses,
   workspaceData,
   loading,
   error,
   loadData,
   saveData,
   saveDataImmediate,
+  saveDevAddressesImmediate,
   saveWorkspaceDataImmediate,
   clearAll,
   startWatchExternal,
@@ -98,6 +99,15 @@ const toolNavGroups: ToolNavGroup[] = [
       { key: 'cookie-injector:devices', label: '设备UA预设', description: 'User-Agent 与设备身份', icon: Smartphone },
     ],
   },
+  {
+    key: 'dev-addresses',
+    label: '常用开发地址',
+    description: '项目、环境与页面 path',
+    icon: Link2,
+    children: [
+      { key: 'dev-addresses:projects', label: '地址管理', description: '维护项目环境与常用页面', icon: Link2 },
+    ],
+  },
 ]
 
 const workspaceNavItems: NavItem[] = [
@@ -113,7 +123,14 @@ function isToolActive(group: ToolNavGroup): boolean {
 }
 
 function selectTool(group: ToolNavGroup): void {
-  activeNav.value = group.children[0].key
+  selectNav(group.children[0].key)
+}
+
+function selectNav(nav: ManagerNavKey): void {
+  activeNav.value = nav
+  const url = new URL(window.location.href)
+  url.searchParams.set('nav', nav)
+  window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`)
 }
 
 onMounted(async () => {
@@ -189,7 +206,7 @@ onMounted(async () => {
           :class="activeNav == item.key
             ? 'bg-sky-50 text-sky-800 shadow-sm ring-1 ring-sky-100 dark:bg-sky-950/60 dark:text-sky-200 dark:ring-sky-900'
             : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/70 dark:hover:text-white'"
-          @click="activeNav = item.key"
+          @click="selectNav(item.key)"
         >
           <span
             class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
@@ -210,7 +227,7 @@ onMounted(async () => {
     <!-- 主内容区 -->
     <main class="min-w-0 flex-1 overflow-hidden">
       <div v-if="activeToolGroup" class="flex h-full min-h-0 flex-col">
-        <div class="shrink-0 border-b border-slate-200 bg-white/80 px-3 py-3 backdrop-blur dark:border-slate-800 dark:bg-slate-900/80 lg:px-5">
+        <div v-if="activeToolGroup.children.length > 1" class="shrink-0 border-b border-slate-200 bg-white/80 px-3 py-3 backdrop-blur dark:border-slate-800 dark:bg-slate-900/80 lg:px-5">
           <nav
             class="flex max-w-full w-fit items-center gap-1 overflow-x-auto rounded-xl border border-slate-200 bg-slate-100/80 p-1 shadow-sm dark:border-slate-700 dark:bg-slate-950/70"
             :aria-label="`${activeToolGroup.label} 功能`"
@@ -223,7 +240,7 @@ onMounted(async () => {
                 ? 'bg-white text-sky-700 shadow-sm ring-1 ring-slate-200 dark:bg-slate-800 dark:text-sky-300 dark:ring-slate-700'
                 : 'text-slate-500 hover:bg-white/70 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800/70 dark:hover:text-slate-100'"
               :aria-current="activeNav == item.key ? 'page' : undefined"
-              @click="activeNav = item.key"
+              @click="selectNav(item.key)"
             >
               <component
                 :is="item.icon"
@@ -246,6 +263,13 @@ onMounted(async () => {
           <CookieProfilePanel v-else-if="activeNav == 'cookie-injector:cookies'" :api="cookieProfilesApi" @toast="showToast" />
 
           <BridgeProfilePanel v-else-if="activeNav == 'cookie-injector:bridges'" :api="bridgeProfilesApi" @toast="showToast" />
+
+          <DevAddressManager
+            v-else-if="activeNav == 'dev-addresses:projects'"
+            :data="devAddresses"
+            :save-data="saveDevAddressesImmediate"
+            @toast="showToast"
+          />
         </div>
       </div>
 

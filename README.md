@@ -2,9 +2,9 @@
 
 > 面向开发与测试场景的浏览器工具集
 
-当前版本：`1.0.0` · [查看 v1.0.0 版本说明](docs/releases/1.0.0.md)
+当前版本：`1.0.1` · [查看 v1.0.1 版本说明](docs/releases/1.0.1.md)
 
-Work DevTools 是一个 Chrome 扩展（Manifest V3），用于集中承载常用开发辅助工具。当前内置的首个工具是 **Cookie Injector**：按「人员 → 平台 → Cookie」三级维度管理常用 Cookie，并支持一键注入、Bridge Mock 和 NAS WebDAV 跨设备同步。
+Work DevTools 是一个 Chrome 扩展（Manifest V3），用于集中承载常用开发辅助工具。当前内置 **Cookie Injector** 和 **常用开发地址**：前者管理 Cookie 与 Bridge 注入，后者按「项目 → 环境 / 页面」维护可复用的开发地址。全部工具数据均可通过 JSON 或 NAS WebDAV 备份同步。
 
 ## ✨ Cookie Injector 功能
 
@@ -17,6 +17,14 @@ Work DevTools 是一个 Chrome 扩展（Manifest V3），用于集中承载常�
 - **跨设备同步**：使用 NAS WebDAV 手动推送/拉取，结合时间戳与 ETag 检测覆盖冲突
 - **暗色模式**：支持浅色 / 深色主题切换
 - **图标自生成**：内置 SVG 源文件 + sharp 脚本，一键生成 16/48/128 三种尺寸 PNG
+
+## 🔗 常用开发地址功能
+
+- **项目化管理**：为每个项目维护名称、备注、可选 Wiki 地址和多个运行环境
+- **环境地址复用**：每个环境保存独立 HTTP/HTTPS 地址，可包含端口、基础 path、查询参数或锚点，并记录跨设备同步的默认环境
+- **页面 path 复用**：新建项目默认包含“健康检查 /health”，页面地址可按当前环境复制或在新标签页跳转
+- **Wiki 快捷操作**：支持复制 Wiki 地址或直接在新标签页打开
+- **右键直达工具**：右键扩展图标可直接进入 Cookie Injector 或常用开发地址设置页
 
 ## 📦 项目结构
 
@@ -51,7 +59,7 @@ work-devtools/
 
 ### 环境要求
 
-- Node.js ≥ 20.19
+- Node.js ≥ 22.13.0
 - Yarn 或 npm
 
 ### 安装依赖
@@ -113,6 +121,7 @@ git push origin v1.0.1
 发布产物名称为 `work-devtools-<version>-chrome.zip`。同一标签重新运行工作流时，会覆盖 Release 中已有的同名 ZIP。
 
 - [版本发布规范](docs/releases/README.md)
+- [v1.0.1 版本说明](docs/releases/1.0.1.md)
 - [v1.0.0 版本说明](docs/releases/1.0.0.md)
 
 ## 🧩 技术栈
@@ -144,6 +153,14 @@ git push origin v1.0.1
 
 UA 覆盖需要 Chrome 的调试权限，只会作用于当前标签页，关闭标签页后自动结束；不会修改视口尺寸、DPR 或触控能力。
 
+### 常用开发地址
+
+1. 右键扩展图标并选择「常用开发地址」，或从管理页左侧进入该工具
+2. 添加项目，填写至少一个环境名称和完整 HTTP/HTTPS 域名
+3. 新建项目会包含“健康检查 /health”，也可继续添加其他常用页面
+4. 点击「复制完整地址」获得组合地址，或点击「跳转」在新标签页打开
+5. 项目设置了 Wiki 时，可选择复制地址或在新标签页打开
+
 ### 导入 / 导出
 
 - **导出**：点击右上角 ⬆ 图标，下载全量 JSON 备份
@@ -153,7 +170,7 @@ UA 覆盖需要 Chrome 的调试权限，只会作用于当前标签页，关闭
 
 ```json
 {
-  "version": 1,
+  "version": 2,
   "updatedAt": 0,
   "tools": {
     "cookieInjector": {
@@ -164,12 +181,15 @@ UA 覆盖需要 Chrome 的调试权限，只会作用于当前标签页，关闭
       "bridgeMethods": [],
       "cookiePresetGroups": [],
       "cookiePresets": []
+    },
+    "devAddresses": {
+      "projects": []
     }
   }
 }
 ```
 
-旧版扁平 Cookie Injector 本机数据和 JSON 备份会在读取时自动包裹到 `tools.cookieInjector`。
+旧版扁平 Cookie Injector 本机数据和 JSON 备份会在读取时自动包裹到 `tools.cookieInjector`；1.0.0 工作台数据缺少 `tools.devAddresses` 时会自动补为空工具数据。
 
 ### NAS 同步（WebDAV）
 
@@ -229,7 +249,8 @@ https://webdav.example.com/webdav/work-devtools-sync/
 |------|------|
 | `cookies` | 写入 Cookie 到目标域名 |
 | `activeTab` | 获取当前标签页 URL 作为注入目标 |
-| `storage` | 使用 chrome.storage.local 持久化 Cookie 数据和同步配置 |
+| `storage` | 使用 chrome.storage.local 持久化全部工具数据和同步配置 |
+| `contextMenus` | 在扩展图标右键菜单中提供工具设置页入口 |
 | `<all_urls>` | 支持向任意域名注入 Cookie，以及访问用户配置的 WebDAV 地址 |
 
 ## 📝 License

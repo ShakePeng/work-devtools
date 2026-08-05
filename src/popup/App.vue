@@ -5,6 +5,7 @@ import { usePersons } from '@shared/composables/usePersons'
 import { usePlatforms } from '@shared/composables/usePlatforms'
 import { useCookies } from '@shared/composables/useCookies'
 import { useDeviceProfiles } from '@shared/composables/useDeviceProfiles'
+import { getManagerPagePath, MANAGER_NAV } from '@shared/managerNavigation'
 import PersonList from './components/PersonList.vue'
 import Toast from './components/Toast.vue'
 import { Database, ExternalLink, KeyRound, Layers3, Settings, Users } from 'lucide-vue-next'
@@ -20,6 +21,7 @@ const dataVersion = ref(0)
 const toastMsg = ref('')
 const toastType = ref<'success' | 'error' | 'warning'>('success')
 const toastKey = ref(0)
+const extensionVersion = chrome.runtime.getManifest().version
 
 watch(
   () => workspaceData.value.updatedAt,
@@ -52,7 +54,9 @@ function showToast(msg: string, type: 'success' | 'error' | 'warning' = 'success
 
 /** 打开管理页面（新标签页） */
 function openManager() {
-  chrome.tabs.create({ url: chrome.runtime.getURL('manager.html') })
+  void chrome.tabs.create({
+    url: chrome.runtime.getURL(getManagerPagePath(MANAGER_NAV.cookieData)),
+  })
 }
 
 onMounted(async () => {
@@ -132,7 +136,7 @@ onMounted(async () => {
 
     <footer class="flex shrink-0 items-center justify-between border-t border-slate-200 bg-white px-3 py-1.5 text-[9px] text-slate-400 dark:border-slate-800 dark:bg-slate-900">
       <span>选择平台后可查看或注入 Cookie</span>
-      <span class="font-medium text-slate-500 dark:text-slate-400">v1.0.1</span>
+      <span class="font-medium text-slate-500 dark:text-slate-400">v{{ extensionVersion }}</span>
     </footer>
   </div>
 

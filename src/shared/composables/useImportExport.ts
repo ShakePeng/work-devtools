@@ -20,6 +20,10 @@ import {
   normalizeCookiePresets,
   normalizePersonCookieConfigs,
 } from '@shared/cookieProfiles'
+import {
+  mergeDevAddressesData,
+  regenerateDevAddressIds,
+} from '@shared/devAddresses'
 import { nanoid } from 'nanoid'
 import { resolveWorkDevToolsData } from '@shared/workspaceData'
 
@@ -90,6 +94,11 @@ export function useImportExport(data: { value: WorkDevToolsData }) {
         cookies: cookieInjector.persons.reduce((sum: number, p: Person) =>
           sum + (p.platforms || []).reduce((s: number, pl: Platform) => s + (pl.cookies?.length || 0), 0)
         , 0),
+        projects: resolved.tools.devAddresses.projects.length,
+        pages: resolved.tools.devAddresses.projects.reduce(
+          (sum, project) => sum + project.pages.length,
+          0
+        ),
         data: resolved,
       }
 
@@ -138,6 +147,7 @@ export function useImportExport(data: { value: WorkDevToolsData }) {
           cookiePresetGroups,
           cookiePresets,
         },
+        devAddresses: regenerateDevAddressIds(importData.tools.devAddresses, nanoid),
       },
     }
   }
@@ -151,6 +161,11 @@ export function useImportExport(data: { value: WorkDevToolsData }) {
     const bridgeMethods = mergeBridgeMethods(currentCookieData.bridgeMethods, importedCookieData.bridgeMethods, bridgeProviders)
     const cookiePresetGroups = mergeCookiePresetGroups(currentCookieData.cookiePresetGroups, importedCookieData.cookiePresetGroups)
     const cookiePresets = mergeCookiePresets(currentCookieData.cookiePresets, importedCookieData.cookiePresets, cookiePresetGroups)
+    const devAddresses = mergeDevAddressesData(
+      data.value.tools.devAddresses,
+      importData.tools.devAddresses,
+      nanoid
+    )
 
     // 合并：保留现有数据，追加新数据（同名人员跳过，同名平台跳过）
     const existingPersonNames = new Set(currentCookieData.persons.map(p => p.name))
@@ -186,6 +201,7 @@ export function useImportExport(data: { value: WorkDevToolsData }) {
           cookiePresetGroups,
           cookiePresets,
         },
+        devAddresses,
       },
     }
   }

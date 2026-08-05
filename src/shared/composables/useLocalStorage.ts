@@ -1,5 +1,5 @@
 import { ref, shallowRef, type Ref, onUnmounted } from 'vue'
-import type { ChunkMeta, CookieData, WorkDevToolsData } from '@shared/types'
+import type { ChunkMeta, CookieData, DevAddressesData, WorkDevToolsData } from '@shared/types'
 import { CURRENT_VERSION, LEGACY_COOKIE_DATA_VERSION } from '@shared/types'
 import { normalizeDeviceProfiles } from '@shared/deviceProfiles'
 import {
@@ -13,6 +13,7 @@ import {
   normalizePersonCookieConfigs,
 } from '@shared/cookieProfiles'
 import { STORAGE_KEYS } from '@shared/storageKeys'
+import { normalizeDevAddressesData } from '@shared/devAddresses'
 import {
   createWorkDevToolsData,
   isLegacyCookieData,
@@ -155,6 +156,7 @@ function normalizeWorkspaceData(
     tools: {
       ...value.tools,
       cookieInjector: normalizeCookieData(value.tools.cookieInjector),
+      devAddresses: normalizeDevAddressesData(value.tools.devAddresses),
     },
   }
 }
@@ -167,8 +169,10 @@ export function useLocalStorage() {
   const loading = ref(false)
   const error = ref<string | null>(null)
   const defaultData = createDefaultData()
+  const defaultWorkspace = createWorkDevToolsData(defaultData)
   const data: Ref<CookieData> = shallowRef(defaultData)
-  const workspaceData: Ref<WorkDevToolsData> = shallowRef(createWorkDevToolsData(defaultData))
+  const devAddresses: Ref<DevAddressesData> = shallowRef(defaultWorkspace.tools.devAddresses)
+  const workspaceData: Ref<WorkDevToolsData> = shallowRef(defaultWorkspace)
 
   let writeTimer: ReturnType<typeof setTimeout> | null = null
   let pendingWrite: CookieData | null = null
@@ -260,6 +264,7 @@ export function useLocalStorage() {
 
       workspaceData.value = normalized
       data.value = normalized.tools.cookieInjector
+      devAddresses.value = normalized.tools.devAddresses
       return data.value
     } catch (e) {
       error.value = `加载数据失败: ${(e as Error).message}`
@@ -273,6 +278,7 @@ export function useLocalStorage() {
   async function persistWorkspace(nextData: WorkDevToolsData): Promise<void> {
     workspaceData.value = nextData
     data.value = nextData.tools.cookieInjector
+    devAddresses.value = nextData.tools.devAddresses
     try {
       _writing = true
       await writeLocalData(nextData)
@@ -308,7 +314,7 @@ export function useLocalStorage() {
     })
   }
 
-  /** 立即写入完整工作台数据，用于导入、全局 JSON 和 WebDAV 拉取。 */
+  /** 立即写入完整工作台数据，用于导入和 WebDAV 拉取。 */
   async function saveWorkspaceDataImmediate(
     newData: WorkDevToolsData,
     options?: { preserveUpdatedAt?: boolean }
@@ -340,6 +346,17 @@ export function useLocalStorage() {
     })
   }
 
+  /** 立即写入常用开发地址数据。 */
+  async function saveDevAddressesImmediate(newData: DevAddressesData): Promise<void> {
+    await saveWorkspaceDataImmediate({
+      ...workspaceData.value,
+      tools: {
+        ...workspaceData.value.tools,
+        devAddresses: newData,
+      },
+    })
+  }
+
   /** 清空完整工作台数据，同时阻止旧数据在下次加载时被重新迁回。 */
   async function clearAll(): Promise<void> {
     try {
@@ -359,16 +376,19 @@ export function useLocalStorage() {
     const emptyWorkspace = createWorkDevToolsData(createDefaultData(), Date.now())
     workspaceData.value = emptyWorkspace
     data.value = emptyWorkspace.tools.cookieInjector
+    devAddresses.value = emptyWorkspace.tools.devAddresses
   }
 
   return {
     data,
+    devAddresses,
     workspaceData,
     loading,
     error,
     loadData,
     saveData,
     saveDataImmediate,
+    saveDevAddressesImmediate,
     saveWorkspaceDataImmediate,
     clearAll,
     startWatchExternal,

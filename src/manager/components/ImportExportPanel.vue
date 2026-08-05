@@ -149,17 +149,19 @@ const preview = () => props.importExport.importPreview.value
             选择备份文件
             <input type="file" accept=".json" class="hidden" @change="handleFile" />
           </label>
-          <p class="mt-3 text-xs text-slate-400">仅支持 Cookie Injector 导出的 JSON 数据。</p>
+          <p class="mt-3 text-xs text-slate-400">支持 Work DevTools 完整备份，也兼容旧版 Cookie Injector JSON。</p>
         </div>
       </template>
 
       <!-- 预览 -->
       <template v-if="step === 'preview' && preview()">
         <div class="space-y-4">
-          <div class="grid grid-cols-3 gap-2">
+          <div class="grid grid-cols-2 gap-2 sm:grid-cols-5">
             <div class="manager-surface-muted p-3 text-center"><p class="text-lg font-semibold text-slate-700 dark:text-slate-200">{{ preview().persons }}</p><p class="text-[10px] text-slate-400">人员</p></div>
             <div class="manager-surface-muted p-3 text-center"><p class="text-lg font-semibold text-slate-700 dark:text-slate-200">{{ preview().platforms }}</p><p class="text-[10px] text-slate-400">平台</p></div>
             <div class="manager-surface-muted p-3 text-center"><p class="text-lg font-semibold text-slate-700 dark:text-slate-200">{{ preview().cookies }}</p><p class="text-[10px] text-slate-400">Cookie</p></div>
+            <div class="manager-surface-muted p-3 text-center"><p class="text-lg font-semibold text-slate-700 dark:text-slate-200">{{ preview().projects }}</p><p class="text-[10px] text-slate-400">项目</p></div>
+            <div class="manager-surface-muted p-3 text-center"><p class="text-lg font-semibold text-slate-700 dark:text-slate-200">{{ preview().pages }}</p><p class="text-[10px] text-slate-400">页面</p></div>
           </div>
 
           <!-- 导入模式 -->
@@ -200,7 +202,7 @@ const preview = () => props.importExport.importPreview.value
         <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-red-500 shadow-sm dark:bg-slate-900"><AlertTriangle :size="17" /></span>
         <div>
           <h3 class="text-sm font-semibold text-red-700 dark:text-red-300">危险操作</h3>
-          <p class="mt-1 text-xs leading-5 text-red-600/70 dark:text-red-300/70">清空所有人员、平台、Cookie 数据，此操作不可恢复。</p>
+          <p class="mt-1 text-xs leading-5 text-red-600/70 dark:text-red-300/70">清空 Cookie Injector 与常用开发地址的全部数据，此操作不可恢复。</p>
         </div>
       </div>
       <button

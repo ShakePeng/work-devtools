@@ -102,7 +102,13 @@ test('读取并校验远端同步文件', async () => {
 
   const remote = await readWebDavFile(config)
 
-  assert.deepEqual(remote?.data, payload)
+  assert.deepEqual(remote?.data, {
+    ...payload,
+    tools: {
+      ...payload.tools,
+      devAddresses: { projects: [] },
+    },
+  })
   assert.equal(remote?.etag, '"version-1"')
 })
 

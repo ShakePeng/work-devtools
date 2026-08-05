@@ -55,9 +55,10 @@ test('两代旧本机 Cookie 数据写入根键后才删除旧键', () => {
   )
 })
 
-test('持久化数据统一包裹到 tools.cookieInjector 且工具内不写元数据', () => {
+test('持久化数据统一包裹到独立工具命名空间且工具内不写元数据', () => {
   assert.match(source, /createWorkDevToolsData\(defaultData\)/)
   assert.match(source, /tools:\s*\{[\s\S]*cookieInjector:/)
+  assert.match(source, /devAddresses: normalizeDevAddressesData/)
   const defaultSource = source.slice(
     source.indexOf('function createDefaultData'),
     source.indexOf('function normalizeCookieData')
@@ -71,6 +72,8 @@ test('持久化数据统一包裹到 tools.cookieInjector 且工具内不写元�
   assert.doesNotMatch(cookieTypeSource, /version:/)
   assert.doesNotMatch(cookieTypeSource, /updatedAt:/)
   assert.match(workspaceDataSource, /const \{ version: _version, updatedAt, \.\.\.cookieInjector \} = legacy/)
+  assert.match(typesSource, /devAddresses: DevAddressesData/)
+  assert.match(typesSource, /CURRENT_VERSION = 2/)
 })
 
 test('Popup 展开状态迁移到 Cookie Injector 命名空间', () => {

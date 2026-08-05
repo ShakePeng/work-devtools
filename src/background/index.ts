@@ -1,8 +1,51 @@
 import type { DeviceProfile, InjectCookiesMessage, Cookie, RuntimeBridgeMock } from '../shared/types'
 import { BRIDGE_SESSION_STORAGE_KEY, type BridgeRuntimeSession } from '../shared/bridgeRuntime'
 import { shouldUseSecureCookie } from '../shared/cookieInjection'
+import {
+  getManagerPagePath,
+  MANAGER_NAV,
+  type ManagerNavKey,
+} from '../shared/managerNavigation'
+
+const TOOL_CONTEXT_MENU_ITEMS: Array<{
+  id: string
+  title: string
+  nav: ManagerNavKey
+}> = [
+  {
+    id: 'work-devtools:cookie-injector',
+    title: 'Cookie Injector',
+    nav: MANAGER_NAV.cookieData,
+  },
+  {
+    id: 'work-devtools:dev-addresses',
+    title: '常用开发地址',
+    nav: MANAGER_NAV.devAddressProjects,
+  },
+]
 
 const emulatedTabs = new Set<number>()
+
+async function registerToolContextMenus(): Promise<void> {
+  await chrome.contextMenus.removeAll()
+  for (const item of TOOL_CONTEXT_MENU_ITEMS) {
+    chrome.contextMenus.create({
+      id: item.id,
+      title: item.title,
+      contexts: ['action'],
+    })
+  }
+}
+
+function openToolManager(menuItemId: string | number): void {
+  const item = TOOL_CONTEXT_MENU_ITEMS.find(candidate => candidate.id == menuItemId)
+  if (!item) return
+  void chrome.tabs.create({
+    url: chrome.runtime.getURL(getManagerPagePath(item.nav)),
+  }).catch(error => {
+    console.error('[Work DevTools] 打开工具设置页失败:', error)
+  })
+}
 
 async function applyDeviceProfile(tabId: number, targetUrl: string, profile: DeviceProfile): Promise<void> {
   if (!/^https?:\/\//.test(targetUrl)) {
@@ -95,6 +138,13 @@ async function injectCookies(cookies: Cookie[], targetUrl: string): Promise<{ su
 }
 
 export function startBackground(): void {
+  chrome.runtime.onInstalled.addListener(() => {
+    void registerToolContextMenus().catch(error => {
+      console.error('[Work DevTools] 注册工具右键菜单失败:', error)
+    })
+  })
+  chrome.contextMenus.onClicked.addListener(info => openToolManager(info.menuItemId))
+
   chrome.tabs.onRemoved.addListener(tabId => { void clearDeviceProfile(tabId) })
   chrome.debugger.onDetach.addListener(source => {
     if (source.tabId != null) emulatedTabs.delete(source.tabId)

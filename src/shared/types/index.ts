@@ -130,6 +130,38 @@ export interface CookieData {
   cookiePresets: CookiePresetDefinition[]
 }
 
+// ============ 常用开发地址 ============
+
+/** 项目下的一个运行环境及其域名。 */
+export interface DevEnvironment {
+  id: string
+  name: string
+  baseUrl: string
+}
+
+/** 项目下可复用的页面路径。 */
+export interface DevPage {
+  id: string
+  name: string
+  path: string
+}
+
+/** 常用开发地址中的一个项目。 */
+export interface DevAddressProject {
+  id: string
+  name: string
+  wikiUrl?: string
+  note?: string
+  defaultEnvironmentId: string
+  environments: DevEnvironment[]
+  pages: DevPage[]
+}
+
+/** 常用开发地址工具数据。 */
+export interface DevAddressesData {
+  projects: DevAddressProject[]
+}
+
 /** Work DevTools 持久化、导入导出和 WebDAV 共用的根数据结构。 */
 export interface WorkDevToolsData {
   version: number
@@ -137,11 +169,12 @@ export interface WorkDevToolsData {
   updatedAt: number
   tools: {
     cookieInjector: CookieData
+    devAddresses: DevAddressesData
     [toolKey: string]: unknown
   }
 }
 
-export const CURRENT_VERSION = 1
+export const CURRENT_VERSION = 2
 export const LEGACY_COOKIE_DATA_VERSION = 7
 
 // ============ 存储分块元数据 ============
@@ -158,6 +191,8 @@ export interface ImportPreview {
   persons: number
   platforms: number
   cookies: number
+  projects: number
+  pages: number
   data: WorkDevToolsData
 }
 

@@ -41,12 +41,19 @@ test('Cookie Injector 作为一级入口并在内容区承载四个功能 Tab', 
   assert.match(managerSource, /:aria-current="activeNav == item\.key \? 'page' : undefined"/)
 })
 
-test('点击 Cookie Injector 固定回到数据管理且左侧不再提供折叠导航', () => {
-  assert.match(managerSource, /function selectTool\(group: ToolNavGroup\): void \{\s*activeNav\.value = group\.children\[0\]\.key\s*\}/)
+test('点击一级工具固定进入该工具首个页面且左侧不再提供折叠导航', () => {
+  assert.match(managerSource, /function selectTool\(group: ToolNavGroup\): void \{\s*selectNav\(group\.children\[0\]\.key\)\s*\}/)
   assert.match(managerSource, /@click="selectTool\(group\)"/)
   assert.doesNotMatch(managerSource, /expandedTools/)
   assert.doesNotMatch(managerSource, /aria-expanded/)
   assert.doesNotMatch(managerSource, /<Transition name="collapse">/)
+})
+
+test('常用开发地址作为独立一级工具进入地址管理页', () => {
+  assert.match(managerSource, /key: 'dev-addresses'/)
+  assert.match(managerSource, /label: '常用开发地址'/)
+  assert.match(managerSource, /key: 'dev-addresses:projects'/)
+  assert.match(managerSource, /<DevAddressManager/)
 })
 
 test('备份与同步保持工作区一级导航', () => {
@@ -58,15 +65,19 @@ test('备份与同步保持工作区一级导航', () => {
 
 test('工具内容采用顶部 Tab 与独立滚动区域', () => {
   assert.match(managerSource, /v-if="activeToolGroup" class="flex h-full min-h-0 flex-col"/)
+  assert.match(managerSource, /v-if="activeToolGroup\.children\.length > 1"/)
   assert.match(managerSource, /activeNav == 'cookie-injector:data' \? 'overflow-hidden p-3' : 'overflow-y-auto p-5 lg:p-7'/)
 })
 
-test('侧栏不再固定展示 Cookie Injector 统计，全局 JSON 编辑工作台根数据', () => {
+test('侧栏不再固定展示 Cookie Injector 统计，JSON 仅编辑 Cookie Injector 数据', () => {
   assert.doesNotMatch(managerSource, /Cookie Injector 数据/)
   assert.doesNotMatch(managerSource, /stats\.persons/)
-  assert.match(dataManagerSource, /JSON\.stringify\(workspaceData\.value, null, 2\)/)
-  assert.match(dataManagerSource, /parsed\.tools\.cookieInjector/)
-  assert.match(dataManagerSource, /工具数据统一位于 tools 下/)
+  assert.match(dataManagerSource, /JSON\.stringify\(storageData\.value, null, 2\)/)
+  assert.match(dataManagerSource, /await saveDataImmediate\(parsed\)/)
+  assert.match(dataManagerSource, /const cookieInjector = parsed/)
+  assert.match(dataManagerSource, /当前内容对应 tools\.cookieInjector/)
+  assert.doesNotMatch(dataManagerSource, /全局 JSON/)
+  assert.doesNotMatch(dataManagerSource, /parsed\.tools\.cookieInjector/)
 })
 
 test('Bridge 会话键包含品牌与工具命名空间', () => {

@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, inject, nextTick, ref, shallowRef, watch } from 'vue'
+import { computed, inject, nextTick, ref, shallowRef, watch, type Ref } from 'vue'
 import {
   type BridgeMethodDefinition,
   type BridgeProvider,
   type Cookie,
+  type CookieData,
   type CookiePresetDefinition,
   type CookiePresetGroup,
   type DeviceProfile,
@@ -11,7 +12,6 @@ import {
   type Platform,
   type PlatformBridgeMock,
   type PlatformMode,
-  type WorkDevToolsData,
 } from '@shared/types'
 import { normalizeDeviceProfiles } from '@shared/deviceProfiles'
 import {
@@ -46,9 +46,9 @@ const deviceProfilesApi = inject<{ available: () => DeviceProfile[]; find: (id?:
 const bridgeProfilesApi = inject<{ providers: () => BridgeProvider[]; methods: () => BridgeMethodDefinition[] }>('bridgeProfilesApi')!
 const cookieProfilesApi = inject<{ groups: () => CookiePresetGroup[]; presets: () => CookiePresetDefinition[] }>('cookieProfilesApi')!
 const showToast = inject<(message: string, type: 'success' | 'error' | 'warning') => void>('showToast', () => {})
-const workspaceData = inject<any>('workspaceData')!
-const saveWorkspaceDataImmediate = inject<(data: WorkDevToolsData) => Promise<void>>(
-  'saveWorkspaceDataImmediate',
+const storageData = inject<Ref<CookieData>>('storageData')!
+const saveDataImmediate = inject<(data: CookieData) => Promise<void>>(
+  'saveDataImmediate',
   async () => {}
 )
 
@@ -76,10 +76,10 @@ const editorSaving = ref(false)
 const editorConfirmation = ref<{ title: string; message: string; action: () => Promise<void> } | null>(null)
 const deleteTarget = ref<DeleteTarget | null>(null)
 
-const globalJsonText = ref('')
-const globalJsonSnapshot = ref('')
-const globalJsonError = ref<string | null>(null)
-const globalJsonConfirm = ref(false)
+const jsonText = ref('')
+const jsonSnapshot = ref('')
+const jsonError = ref<string | null>(null)
+const jsonConfirm = ref(false)
 
 const persons = computed<Person[]>(() => personsApi.list())
 const uaInjectionEnabled = computed(() => deviceProfilesApi.isUaInjectionEnabled())
@@ -137,7 +137,7 @@ const hasSearchResults = computed(() =>
   searchGroups.value.persons.length + searchGroups.value.platforms.length + searchGroups.value.cookies.length > 0
 )
 
-const globalJsonDirty = computed(() => globalJsonText.value !== globalJsonSnapshot.value)
+const jsonDirty = computed(() => jsonText.value !== jsonSnapshot.value)
 
 watch(
   persons,
@@ -154,9 +154,9 @@ watch(
   { immediate: true }
 )
 
-watch(globalJsonText, value => {
-  globalJsonConfirm.value = false
-  globalJsonError.value = validateGlobalData(value)
+watch(jsonText, value => {
+  jsonConfirm.value = false
+  jsonError.value = validateCookieInjectorData(value)
 })
 
 function togglePerson(personId: string) {
@@ -597,48 +597,48 @@ async function copyText(value: string, successMessage: string) {
   showToast(successMessage, 'success')
 }
 
-function enterGlobalJson() {
+function enterJson() {
   if (viewMode.value === 'json') return
-  globalJsonSnapshot.value = JSON.stringify(workspaceData.value, null, 2)
-  globalJsonText.value = globalJsonSnapshot.value
-  globalJsonError.value = null
-  globalJsonConfirm.value = false
+  jsonSnapshot.value = JSON.stringify(storageData.value, null, 2)
+  jsonText.value = jsonSnapshot.value
+  jsonError.value = null
+  jsonConfirm.value = false
   viewMode.value = 'json'
 }
 
 function showStructuredView() {
-  if (viewMode.value === 'json') exitGlobalJson()
+  if (viewMode.value === 'json') exitJson()
   else viewMode.value = 'structured'
 }
 
-function exitGlobalJson() {
-  if (globalJsonDirty.value && !window.confirm('存在未保存的 JSON 修改，确定退出吗？')) return
+function exitJson() {
+  if (jsonDirty.value && !window.confirm('存在未保存的 JSON 修改，确定退出吗？')) return
   viewMode.value = 'structured'
-  globalJsonConfirm.value = false
+  jsonConfirm.value = false
 }
 
-async function saveGlobalJson() {
-  if (globalJsonError.value) return
-  if (!globalJsonDirty.value) {
+async function saveJson() {
+  if (jsonError.value) return
+  if (!jsonDirty.value) {
     showToast('数据未修改', 'warning')
     return
   }
-  if (!globalJsonConfirm.value) {
-    globalJsonConfirm.value = true
+  if (!jsonConfirm.value) {
+    jsonConfirm.value = true
     return
   }
-  const parsed = JSON.parse(globalJsonText.value) as WorkDevToolsData
-  await saveWorkspaceDataImmediate(parsed)
-  globalJsonSnapshot.value = JSON.stringify(workspaceData.value, null, 2)
-  globalJsonText.value = globalJsonSnapshot.value
-  globalJsonConfirm.value = false
-  showToast('全局 JSON 已保存', 'success')
+  const parsed = JSON.parse(jsonText.value) as CookieData
+  await saveDataImmediate(parsed)
+  jsonSnapshot.value = JSON.stringify(storageData.value, null, 2)
+  jsonText.value = jsonSnapshot.value
+  jsonConfirm.value = false
+  showToast('JSON 已保存', 'success')
 }
 
-function restoreGlobalJson() {
-  globalJsonText.value = globalJsonSnapshot.value
-  globalJsonError.value = null
-  globalJsonConfirm.value = false
+function restoreJson() {
+  jsonText.value = jsonSnapshot.value
+  jsonError.value = null
+  jsonConfirm.value = false
 }
 
 function blurSearchSoon() {
@@ -829,17 +829,13 @@ function assertKnownDeviceProfile(profileId?: string) {
   }
 }
 
-function validateGlobalData(value: string): string | null {
+function validateCookieInjectorData(value: string): string | null {
   if (!value.trim()) return 'JSON 内容不能为空。'
   try {
     const parsed = JSON.parse(value)
-    assertObject(parsed, '全局数据')
-    if (typeof parsed.version != 'number') return 'version 必须为数字。'
-    if (typeof parsed.updatedAt != 'number') return 'updatedAt 必须为数字。'
-    assertObject(parsed.tools, 'tools')
-    assertObject(parsed.tools.cookieInjector, 'tools.cookieInjector')
-    const cookieInjector = parsed.tools.cookieInjector
-    if (!Array.isArray(cookieInjector.persons)) return 'tools.cookieInjector.persons 必须为数组。'
+    assertObject(parsed, 'Cookie Injector 数据')
+    const cookieInjector = parsed
+    if (!Array.isArray(cookieInjector.persons)) return 'persons 必须为数组。'
     if (cookieInjector.deviceProfiles != undefined && !Array.isArray(cookieInjector.deviceProfiles)) return 'deviceProfiles 必须为数组。'
     if (cookieInjector.bridgeProviders != undefined && !Array.isArray(cookieInjector.bridgeProviders)) return 'bridgeProviders 必须为数组。'
     if (cookieInjector.bridgeMethods != undefined && !Array.isArray(cookieInjector.bridgeMethods)) return 'bridgeMethods 必须为数组。'
@@ -919,7 +915,7 @@ function validateGlobalData(value: string): string | null {
 
       <div class="flex items-center rounded-xl bg-slate-100 p-1 dark:bg-slate-900">
         <button class="view-switch" :class="viewMode === 'structured' ? 'view-switch-active' : ''" @click="showStructuredView"><LayoutPanelLeft :size="14" />结构化</button>
-        <button class="view-switch" :class="viewMode === 'json' ? 'view-switch-active' : ''" @click="enterGlobalJson"><Braces :size="14" />全局 JSON</button>
+        <button class="view-switch" :class="viewMode === 'json' ? 'view-switch-active' : ''" @click="enterJson"><Braces :size="14" />JSON</button>
       </div>
       <button v-if="viewMode === 'structured'" class="inline-flex items-center gap-1.5 rounded-xl bg-sky-600 px-3.5 py-2 text-sm font-medium text-white shadow-sm hover:bg-sky-700" @click="openAddPerson"><Plus :size="16" />添加人员</button>
       <div v-if="viewMode === 'structured'" class="relative" @click.stop>
@@ -970,19 +966,19 @@ function validateGlobalData(value: string): string | null {
     <div v-else class="flex min-h-0 flex-1 flex-col bg-slate-950">
       <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 bg-slate-900 px-4 py-3">
         <div>
-          <p class="text-sm font-semibold text-slate-100">全局 JSON 编辑</p>
-          <p class="mt-0.5 text-xs text-slate-400">直接编辑完整 WorkDevToolsData，工具数据统一位于 tools 下。</p>
+          <p class="text-sm font-semibold text-slate-100">JSON 编辑</p>
+          <p class="mt-0.5 text-xs text-slate-400">当前内容对应 tools.cookieInjector，仅保存 Cookie Injector 数据。</p>
         </div>
         <div class="flex items-center gap-2">
-          <span v-if="globalJsonError" class="rounded-full bg-red-950 px-2 py-1 text-[11px] text-red-300">格式错误</span>
-          <span v-else-if="globalJsonDirty" class="rounded-full bg-amber-950 px-2 py-1 text-[11px] text-amber-300">已修改</span>
-          <button class="json-toolbar-button" @click="exitGlobalJson">退出</button>
-          <button class="json-toolbar-button" @click="restoreGlobalJson"><RotateCcw :size="13" />还原</button>
-          <button class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-white disabled:opacity-40" :class="globalJsonConfirm ? 'bg-red-600 hover:bg-red-700' : 'bg-sky-600 hover:bg-sky-700'" :disabled="!!globalJsonError" @click="saveGlobalJson"><Save :size="13" />{{ globalJsonConfirm ? '确认覆盖全部数据' : '保存' }}</button>
+          <span v-if="jsonError" class="rounded-full bg-red-950 px-2 py-1 text-[11px] text-red-300">格式错误</span>
+          <span v-else-if="jsonDirty" class="rounded-full bg-amber-950 px-2 py-1 text-[11px] text-amber-300">已修改</span>
+          <button class="json-toolbar-button" @click="exitJson">退出</button>
+          <button class="json-toolbar-button" @click="restoreJson"><RotateCcw :size="13" />还原</button>
+          <button class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-white disabled:opacity-40" :class="jsonConfirm ? 'bg-red-600 hover:bg-red-700' : 'bg-sky-600 hover:bg-sky-700'" :disabled="!!jsonError" @click="saveJson"><Save :size="13" />{{ jsonConfirm ? '确认覆盖 Cookie Injector' : '保存' }}</button>
         </div>
       </div>
-      <div v-if="globalJsonError" class="border-b border-red-900 bg-red-950/60 px-4 py-2 text-xs text-red-300">{{ globalJsonError }}</div>
-      <textarea v-model="globalJsonText" class="min-h-0 flex-1 resize-none bg-slate-950 p-5 font-mono text-xs leading-6 text-emerald-300 outline-none" spellcheck="false" />
+      <div v-if="jsonError" class="border-b border-red-900 bg-red-950/60 px-4 py-2 text-xs text-red-300">{{ jsonError }}</div>
+      <textarea v-model="jsonText" class="min-h-0 flex-1 resize-none bg-slate-950 p-5 font-mono text-xs leading-6 text-emerald-300 outline-none" spellcheck="false" />
     </div>
 
     <EntityEditorDrawer
