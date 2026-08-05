@@ -1,0 +1,32 @@
+README.md
+  s_6f20a79a2100bc::t_1c91df369bd6ce 5-6,105,114-116
+  s_6f20a79a2100bc::t_0a16f74e4d794c 103-104,106-113,117
+.gitignore
+  s_6f20a79a2100bc::t_109a8228046285 12-16
+docs/releases/README.md
+  s_6f20a79a2100bc::t_1c91df369bd6ce 1-61
+tests/release-workflow.test.mjs
+  s_6f20a79a2100bc::t_1c91df369bd6ce 1-29
+.github/workflows/release.yml
+  s_6f20a79a2100bc::t_1c91df369bd6ce 1,17,22-26,31-34,37,42-50,53,55,57,60,63-67,70-74,79-82,84,86-87
+  s_6f20a79a2100bc::t_0a16f74e4d794c 2-16,18-21,27-30,35-36,38-41,51-52,54,56,58-59,61-62,68-69,75-78,83,85,88
+docs/releases/1.0.0.md
+  s_6f20a79a2100bc::t_1c91df369bd6ce 1-31,33-42
+  s_6f20a79a2100bc::t_df9bcb5f3158ff 32
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "154f65d2041adadb368e4eb54f61241e3107815c",
+  "prompts": {},
+  "sessions": {
+    "s_6f20a79a2100bc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fcfe7-939b-70b3-a241-3e1cff746b0c",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "彭振东 <pzd6391@ly.com>"
+    }
+  }
+}
