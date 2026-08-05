@@ -21,6 +21,8 @@ test('当前版本提供对应发布说明', () => {
 
 test('发布工作流校验标签版本并使用版本 Markdown', () => {
   assert.match(workflow, /tags:\s*\n\s*- 'v\*'/)
+  assert.equal(packageJson.engines.node, '>=22.13.0')
+  assert.match(workflow, /node-version: '22\.13\.0'/)
   assert.match(workflow, /expected_tag="v\$\{package_version\}"/)
   assert.match(workflow, /release_notes="docs\/releases\/\$\{package_version\}\.md"/)
   assert.match(workflow, /--notes-file "\$RELEASE_NOTES"/)
