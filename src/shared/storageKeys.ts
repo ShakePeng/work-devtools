@@ -1,0 +1,11 @@
+export const STORAGE_KEYS = {
+  data: 'work_devtools.data',
+  localMigrated: 'work_devtools.local_migrated',
+  cookieInjector: {
+    expandedPersonIds: 'work_devtools.cookie_injector.expanded_person_ids',
+    bridgeRuntimeSession: '__WORK_DEVTOOLS_COOKIE_INJECTOR_BRIDGE_MOCKS__',
+  },
+  webDav: {
+    config: 'work_devtools.webdav.config',
+  },
+} as const
