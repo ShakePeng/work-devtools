@@ -2,6 +2,8 @@
 
 > 面向开发与测试场景的浏览器工具集
 
+当前版本：`1.0.0` · [查看 v1.0.0 版本说明](docs/releases/1.0.0.md)
+
 Work DevTools 是一个 Chrome 扩展（Manifest V3），用于集中承载常用开发辅助工具。当前内置的首个工具是 **Cookie Injector**：按「人员 → 平台 → Cookie」三级维度管理常用 Cookie，并支持一键注入、Bridge Mock 和 NAS WebDAV 跨设备同步。
 
 ## ✨ Cookie Injector 功能
@@ -97,6 +99,21 @@ yarn zip
 ```
 
 WXT 会在 `.output/` 目录下生成 Chrome 扩展 zip，可直接发给别人或上传 Chrome 商店。
+
+### GitHub Release 自动发布
+
+仓库通过 GitHub Actions 在推送 `v*` 标签时自动执行测试、打包 Chrome 扩展并创建 GitHub Release。标签版本必须与 `package.json` 中的版本一致，并且必须提前创建 `docs/releases/<version>.md`，工作流会将该文件作为 Release Notes。
+
+```bash
+# 示例：package.json 版本已经更新为 1.0.1
+git tag v1.0.1
+git push origin v1.0.1
+```
+
+发布产物名称为 `work-devtools-<version>-chrome.zip`。同一标签重新运行工作流时，会覆盖 Release 中已有的同名 ZIP。
+
+- [版本发布规范](docs/releases/README.md)
+- [v1.0.0 版本说明](docs/releases/1.0.0.md)
 
 ## 🧩 技术栈
 

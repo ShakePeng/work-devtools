@@ -9,3 +9,8 @@ coverage/
 
 *.zip
 .DS_Store
+
+# 覆盖个人全局忽略规则，确保 GitHub Actions 工作流进入仓库。
+!.github/
+!.github/workflows/
+!.github/workflows/*.yml

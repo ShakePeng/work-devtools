@@ -1,0 +1,88 @@
+name: 发布扩展
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: 测试、打包并发布 Chrome ZIP
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v6
+
+      - name: 设置 Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20.19.0'
+          cache: yarn
+
+      - name: 启用 Yarn
+        run: corepack enable
+
+      - name: 安装依赖
+        run: yarn install --frozen-lockfile
+
+      - name: 校验发布版本
+        id: version
+        shell: bash
+        run: |
+          package_version="$(node -p "require('./package.json').version")"
+          expected_tag="v${package_version}"
+          release_notes="docs/releases/${package_version}.md"
+
+          if [ "$GITHUB_REF_NAME" != "$expected_tag" ]; then
+            echo "标签 $GITHUB_REF_NAME 与 package.json 版本 $package_version 不一致，应使用 $expected_tag。" >&2
+            exit 1
+          fi
+          if [ ! -f "$release_notes" ]; then
+            echo "缺少当前版本发布说明：$release_notes" >&2
+            exit 1
+          fi
+
+          echo "package_version=${package_version}" >> "$GITHUB_OUTPUT"
+          echo "release_notes=${release_notes}" >> "$GITHUB_OUTPUT"
+
+      - name: 运行测试
+        run: yarn test
+
+      - name: 打包扩展
+        run: yarn zip
+
+      - name: 创建或更新 GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PACKAGE_VERSION: ${{ steps.version.outputs.package_version }}
+          RELEASE_NOTES: ${{ steps.version.outputs.release_notes }}
+        shell: bash
+        run: |
+          asset_path=".output/work-devtools-${PACKAGE_VERSION}-chrome.zip"
+          release_title="Work DevTools v${PACKAGE_VERSION}"
+
+          if [ ! -f "$asset_path" ]; then
+            echo "未找到打包产物：$asset_path" >&2
+            exit 1
+          fi
+
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release edit "$GITHUB_REF_NAME" \
+              --title "$release_title" \
+              --notes-file "$RELEASE_NOTES"
+            gh release upload "$GITHUB_REF_NAME" "$asset_path" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" "$asset_path" \
+              --verify-tag \
+              --title "$release_title" \
+              --notes-file "$RELEASE_NOTES"
+          fi
