@@ -8,4 +8,7 @@ export const STORAGE_KEYS = {
   webDav: {
     config: 'work_devtools.webdav.config',
   },
+  system: {
+    releaseCheck: 'work_devtools.system.release_check',
+  },
 } as const

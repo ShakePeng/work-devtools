@@ -11,6 +11,8 @@ import {
   buildDevPageUrl,
   normalizeDevAddressesData,
   normalizeDevPagePath,
+  reorderItemsById,
+  type SortPosition,
 } from '@shared/devAddresses'
 import {
   BookOpen,
@@ -42,10 +44,17 @@ type DeleteTarget =
   | { type: 'project'; project: DevAddressProject }
   | { type: 'page'; project: DevAddressProject; page: DevPage }
 
+type SortDropTarget = { id: string; position: SortPosition }
+
 const selectedProjectId = ref<string | null>(null)
 const switchingEnvironment = ref(false)
 const deleteTarget = ref<DeleteTarget | null>(null)
 const deleting = ref(false)
+const sorting = ref(false)
+const draggingProjectId = ref<string | null>(null)
+const projectDropTarget = ref<SortDropTarget | null>(null)
+const draggingPageId = ref<string | null>(null)
+const pageDropTarget = ref<SortDropTarget | null>(null)
 
 const projectEditorOpen = ref(false)
 const editingProjectId = ref<string | null>(null)
@@ -99,6 +108,118 @@ function cloneData(): DevAddressesData {
       pages: project.pages.map(page => ({ ...page })),
     })),
   }
+}
+
+function getDropPosition(event: DragEvent): SortPosition {
+  const target = event.currentTarget as HTMLElement
+  const { top, height } = target.getBoundingClientRect()
+  return event.clientY < top + height / 2 ? 'before' : 'after'
+}
+
+function isProjectDropTarget(projectId: string, position: SortPosition): boolean {
+  return projectDropTarget.value?.id == projectId
+    && projectDropTarget.value.position == position
+}
+
+function isPageDropTarget(pageId: string, position: SortPosition): boolean {
+  return pageDropTarget.value?.id == pageId
+    && pageDropTarget.value.position == position
+}
+
+function startProjectDrag(event: DragEvent, projectId: string): void {
+  if (sorting.value) return
+  draggingProjectId.value = projectId
+  projectDropTarget.value = null
+  event.dataTransfer?.setData('text/plain', projectId)
+  if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move'
+}
+
+function finishProjectDrag(): void {
+  draggingProjectId.value = null
+  projectDropTarget.value = null
+}
+
+function updateProjectDropTarget(event: DragEvent, projectId: string): void {
+  if (!draggingProjectId.value || draggingProjectId.value == projectId) {
+    projectDropTarget.value = null
+    return
+  }
+  projectDropTarget.value = { id: projectId, position: getDropPosition(event) }
+  if (event.dataTransfer) event.dataTransfer.dropEffect = 'move'
+}
+
+function startPageDrag(event: DragEvent, pageId: string): void {
+  if (sorting.value) return
+  draggingPageId.value = pageId
+  pageDropTarget.value = null
+  event.dataTransfer?.setData('text/plain', pageId)
+  if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move'
+}
+
+function finishPageDrag(): void {
+  draggingPageId.value = null
+  pageDropTarget.value = null
+}
+
+function updatePageDropTarget(event: DragEvent, pageId: string): void {
+  if (!draggingPageId.value || draggingPageId.value == pageId) {
+    pageDropTarget.value = null
+    return
+  }
+  pageDropTarget.value = { id: pageId, position: getDropPosition(event) }
+  if (event.dataTransfer) event.dataTransfer.dropEffect = 'move'
+}
+
+async function saveSortedData(
+  update: (data: DevAddressesData) => boolean,
+  label: string
+): Promise<void> {
+  if (sorting.value) return
+
+  try {
+    const next = cloneData()
+    if (!update(next)) return
+    sorting.value = true
+    await props.saveData(normalizeDevAddressesData(next))
+    emit('toast', `${label}已更新`, 'success')
+  } catch (error) {
+    emit('toast', `${label}失败：${(error as Error).message}`, 'error')
+  } finally {
+    sorting.value = false
+  }
+}
+
+async function dropProject(event: DragEvent, projectId: string): Promise<void> {
+  event.preventDefault()
+  const sourceProjectId = draggingProjectId.value
+  const target = projectDropTarget.value
+  finishProjectDrag()
+  if (!sourceProjectId || !target || target.id != projectId) return
+
+  await saveSortedData(data => {
+    const projects = reorderItemsById(data.projects, sourceProjectId, projectId, target.position)
+    if (projects == data.projects) return false
+    data.projects = projects
+    return true
+  }, '项目排序')
+}
+
+async function dropPage(event: DragEvent, pageId: string): Promise<void> {
+  event.preventDefault()
+  const sourcePageId = draggingPageId.value
+  const target = pageDropTarget.value
+  const projectId = selectedProject.value?.id
+  finishPageDrag()
+  if (!sourcePageId || !target || target.id != pageId || !projectId) return
+
+  await saveSortedData(data => {
+    const project = data.projects.find(item => item.id == projectId)
+    if (!project) throw new Error('项目不存在，请刷新后重试。')
+    const pages = reorderItemsById(project.pages, sourcePageId, pageId, target.position)
+    if (pages == project.pages) return false
+    project.pages = pages
+    return true
+  }, '页面排序')
 }
 
 function openAddProject(): void {
@@ -353,7 +474,7 @@ async function confirmDelete(): Promise<void> {
       </button>
     </header>
 
-    <div class="grid min-h-[560px] gap-5 lg:grid-cols-[280px_minmax(0,1fr)]">
+    <div class="grid min-h-[560px] gap-x-5 gap-y-2 lg:grid-cols-[280px_minmax(0,1fr)]">
       <aside class="manager-surface flex min-h-0 flex-col overflow-hidden">
         <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-slate-800">
           <div>
@@ -374,17 +495,31 @@ async function confirmDelete(): Promise<void> {
           <button
             v-for="project in data.projects"
             :key="project.id"
-            class="group flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors"
-            :class="selectedProjectId == project.id
-              ? 'bg-sky-50 text-sky-800 ring-1 ring-sky-100 dark:bg-sky-950/50 dark:text-sky-200 dark:ring-sky-900'
-              : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800/70'"
+            class="group relative flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors"
+            :class="[
+              selectedProjectId == project.id
+                ? 'bg-sky-50 text-sky-800 ring-1 ring-sky-100 dark:bg-sky-950/50 dark:text-sky-200 dark:ring-sky-900'
+                : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800/70',
+              draggingProjectId == project.id ? 'opacity-50' : '',
+              isProjectDropTarget(project.id, 'before') ? 'before:absolute before:left-3 before:right-3 before:-top-px before:z-10 before:h-0.5 before:rounded-full before:bg-sky-500' : '',
+              isProjectDropTarget(project.id, 'after') ? 'after:absolute after:left-3 after:right-3 after:-bottom-px after:z-10 after:h-0.5 after:rounded-full after:bg-sky-500' : '',
+            ]"
             @click="selectedProjectId = project.id"
+            @dragover.prevent="updateProjectDropTarget($event, project.id)"
+            @drop.prevent="dropProject($event, project.id)"
           >
             <span
-              class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
-              :class="selectedProjectId == project.id
-                ? 'bg-white text-sky-600 shadow-sm dark:bg-slate-900 dark:text-sky-400'
-                : 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500'"
+              :draggable="data.projects.length > 1 && !sorting"
+              :title="data.projects.length > 1 ? '拖动排序' : undefined"
+              class="flex h-9 w-9 shrink-0 select-none items-center justify-center rounded-xl"
+              :class="[
+                selectedProjectId == project.id
+                  ? 'bg-white text-sky-600 shadow-sm dark:bg-slate-900 dark:text-sky-400'
+                  : 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500',
+                data.projects.length > 1 && !sorting ? 'cursor-grab active:cursor-grabbing' : '',
+              ]"
+              @dragstart="startProjectDrag($event, project.id)"
+              @dragend="finishProjectDrag"
             >
               <FolderKanban :size="17" />
             </span>
@@ -421,7 +556,7 @@ async function confirmDelete(): Promise<void> {
           </header>
 
           <div class="min-h-0 flex-1 overflow-y-auto p-5">
-            <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(300px,0.8fr)]">
+            <div class="grid gap-x-4 gap-y-2 xl:grid-cols-[minmax(0,1fr)_minmax(300px,0.8fr)]">
               <section class="manager-surface-muted p-4">
                 <div class="mb-3 flex items-center gap-2">
                   <Server :size="15" class="text-sky-500" />
@@ -472,7 +607,7 @@ async function confirmDelete(): Promise<void> {
               </section>
             </div>
 
-            <section v-if="selectedProject.note" class="mt-4 rounded-xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-900/60">
+            <section v-if="selectedProject.note" class="mt-2 rounded-xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-900/60">
               <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">Note</p>
               <p class="mt-1.5 whitespace-pre-wrap break-words text-sm leading-6 text-slate-600 dark:text-slate-300">{{ selectedProject.note }}</p>
             </section>
@@ -487,8 +622,26 @@ async function confirmDelete(): Promise<void> {
 
             <div v-if="selectedProject.pages.length" class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800">
               <div class="divide-y divide-slate-100 dark:divide-slate-800">
-                <div v-for="page in selectedProject.pages" :key="page.id" class="flex flex-wrap items-center gap-3 px-4 py-3.5 transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-950/40">
-                  <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"><FileCode2 :size="16" /></span>
+                <div
+                  v-for="page in selectedProject.pages"
+                  :key="page.id"
+                  class="relative flex flex-wrap items-center gap-3 px-4 py-3.5 transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-950/40"
+                  :class="[
+                    draggingPageId == page.id ? 'opacity-50' : '',
+                    isPageDropTarget(page.id, 'before') ? 'before:absolute before:left-4 before:right-4 before:-top-px before:z-10 before:h-0.5 before:rounded-full before:bg-sky-500' : '',
+                    isPageDropTarget(page.id, 'after') ? 'after:absolute after:left-4 after:right-4 after:-bottom-px after:z-10 after:h-0.5 after:rounded-full after:bg-sky-500' : '',
+                  ]"
+                  @dragover.prevent="updatePageDropTarget($event, page.id)"
+                  @drop.prevent="dropPage($event, page.id)"
+                >
+                  <span
+                    :draggable="selectedProject.pages.length > 1 && !sorting"
+                    :title="selectedProject.pages.length > 1 ? '拖动排序' : undefined"
+                    class="flex h-9 w-9 shrink-0 select-none items-center justify-center rounded-xl bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+                    :class="selectedProject.pages.length > 1 && !sorting ? 'cursor-grab active:cursor-grabbing' : ''"
+                    @dragstart="startPageDrag($event, page.id)"
+                    @dragend="finishPageDrag"
+                  ><FileCode2 :size="16" /></span>
                   <div class="min-w-[180px] flex-1">
                     <p class="truncate text-sm font-semibold text-slate-700 dark:text-slate-200">{{ page.name }}</p>
                     <code class="mt-1 block truncate text-xs text-slate-400" :title="page.path">{{ page.path }}</code>

@@ -33,7 +33,7 @@ const activeTab = ref<'backup' | 'sync'>('backup')
       </div>
     </header>
 
-    <nav class="manager-surface flex w-fit items-center gap-1 p-1.5" aria-label="备份与同步功能">
+    <nav class="manager-surface mb-2 flex w-fit items-center gap-1 p-1.5" aria-label="备份与同步功能">
       <button
         class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors"
         :class="activeTab == 'backup'

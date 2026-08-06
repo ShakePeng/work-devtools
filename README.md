@@ -23,6 +23,7 @@ Work DevTools 是一个 Chrome 扩展（Manifest V3），用于集中承载常�
 - **项目化管理**：为每个项目维护名称、备注、可选 Wiki 地址和多个运行环境
 - **环境地址复用**：每个环境保存独立 HTTP/HTTPS 地址，可包含端口、基础 path、查询参数或锚点，并记录跨设备同步的默认环境
 - **页面 path 复用**：新建项目默认包含“健康检查 /health”，页面地址可按当前环境复制或在新标签页跳转
+- **拖拽排序**：拖动项目或页面图标即可调整展示顺序，结果会自动保存并参与备份同步
 - **Wiki 快捷操作**：支持复制 Wiki 地址或直接在新标签页打开
 - **右键直达工具**：右键扩展图标可直接进入 Cookie Injector 或常用开发地址设置页
 
@@ -120,6 +121,12 @@ git push origin v1.0.1
 
 发布产物名称为 `work-devtools-<version>-chrome.zip`。同一标签重新运行工作流时，会覆盖 Release 中已有的同名 ZIP。
 
+### 版本检查与手动更新
+
+打开管理页或 Popup 时，扩展会读取 GitHub 最新正式 Release；每台设备最多每 24 小时自动请求一次。当前版本入口始终可打开 Releases 列表，发现新版本时可直接查看对应 Release 并手动下载 ZIP 安装；扩展不会自动下载或安装更新。
+
+版本检查缓存保存在独立的 `chrome.storage.local` 键中，不会进入 Work DevTools 业务数据、JSON 导出或 WebDAV 同步。
+
 - [版本发布规范](docs/releases/README.md)
 - [v1.0.1 版本说明](docs/releases/1.0.1.md)
 - [v1.0.0 版本说明](docs/releases/1.0.0.md)
@@ -158,8 +165,9 @@ UA 覆盖需要 Chrome 的调试权限，只会作用于当前标签页，关闭
 1. 右键扩展图标并选择「常用开发地址」，或从管理页左侧进入该工具
 2. 添加项目，填写至少一个环境名称和完整 HTTP/HTTPS 域名
 3. 新建项目会包含“健康检查 /health”，也可继续添加其他常用页面
-4. 点击「复制完整地址」获得组合地址，或点击「跳转」在新标签页打开
-5. 项目设置了 Wiki 时，可选择复制地址或在新标签页打开
+4. 拖动项目或页面左侧图标，可调整对应列表的展示顺序
+5. 点击「复制完整地址」获得组合地址，或点击「跳转」在新标签页打开
+6. 项目设置了 Wiki 时，可选择复制地址或在新标签页打开
 
 ### 导入 / 导出
 
@@ -233,6 +241,7 @@ https://webdav.example.com/webdav/work-devtools-sync/
 |------|---------|------|
 | Work DevTools 工具数据 | `chrome.storage.local` | 使用统一根键持久化；首次升级自动迁移旧版 Cookie Injector 数据 |
 | 同步配置（地址、用户名、密码） | `chrome.storage.local` | 每台设备独立配置，不参与同步 |
+| Release 检查缓存 | `chrome.storage.local` | 每台设备独立保存，24 小时内复用；不参与导出或 WebDAV 同步 |
 | 远端同步副本 | NAS WebDAV | `/webdav/work-devtools-sync/work-devtools-sync.json` |
 
 #### 安全说明

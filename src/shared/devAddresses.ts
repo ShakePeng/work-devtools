@@ -7,6 +7,8 @@ import type {
 
 type IdFactory = () => string
 
+export type SortPosition = 'before' | 'after'
+
 function assertRecord(value: unknown, label: string): asserts value is Record<string, unknown> {
   if (!value || typeof value != 'object' || Array.isArray(value)) {
     throw new Error(`${label}必须是对象`)
@@ -28,6 +30,26 @@ function assertUnique(values: string[], label: string): void {
 
 export function createDefaultDevAddressesData(): DevAddressesData {
   return { projects: [] }
+}
+
+/** 保留原项引用，按拖拽目标前后重排，不改变数据内容。 */
+export function reorderItemsById<T extends { id: string }>(
+  items: T[],
+  sourceId: string,
+  targetId: string,
+  position: SortPosition
+): T[] {
+  const sourceIndex = items.findIndex(item => item.id == sourceId)
+  const targetIndex = items.findIndex(item => item.id == targetId)
+  if (sourceIndex < 0 || targetIndex < 0 || sourceIndex == targetIndex) return items
+
+  const reordered = [...items]
+  const [source] = reordered.splice(sourceIndex, 1)
+  const nextTargetIndex = reordered.findIndex(item => item.id == targetId)
+  if (!source || nextTargetIndex < 0) return items
+
+  reordered.splice(nextTargetIndex + (position == 'after' ? 1 : 0), 0, source)
+  return reordered.every((item, index) => item.id == items[index].id) ? items : reordered
 }
 
 /** 环境保存完整 HTTP/HTTPS 基础地址，可包含端口、path、查询参数和锚点。 */

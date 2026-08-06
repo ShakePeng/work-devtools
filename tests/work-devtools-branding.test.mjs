@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { test } from 'node:test'
 
-const [packageJson, wxtSource, managerSource, popupSource, managerHtml, popupHtml, storageKeysSource, dataManagerSource] = await Promise.all([
+const [packageJson, wxtSource, managerSource, popupSource, managerHtml, popupHtml, storageKeysSource, dataManagerSource, backupSyncSource, importExportSource, syncSource, devAddressSource, uiStyleGuideSource] = await Promise.all([
   readFile(new URL('../package.json', import.meta.url), 'utf8').then(JSON.parse),
   readFile(new URL('../wxt.config.ts', import.meta.url), 'utf8'),
   readFile(new URL('../src/manager/App.vue', import.meta.url), 'utf8'),
@@ -11,6 +11,11 @@ const [packageJson, wxtSource, managerSource, popupSource, managerHtml, popupHtm
   readFile(new URL('../src/entrypoints/popup/index.html', import.meta.url), 'utf8'),
   readFile(new URL('../src/shared/storageKeys.ts', import.meta.url), 'utf8'),
   readFile(new URL('../src/manager/components/UnifiedTreeManager.vue', import.meta.url), 'utf8'),
+  readFile(new URL('../src/manager/components/BackupSyncPanel.vue', import.meta.url), 'utf8'),
+  readFile(new URL('../src/manager/components/ImportExportPanel.vue', import.meta.url), 'utf8'),
+  readFile(new URL('../src/manager/components/SyncPanel.vue', import.meta.url), 'utf8'),
+  readFile(new URL('../src/manager/components/DevAddressManager.vue', import.meta.url), 'utf8'),
+  readFile(new URL('../docs/ui-style-guide.md', import.meta.url), 'utf8'),
 ])
 
 test('扩展品牌统一使用 Work DevTools', () => {
@@ -54,13 +59,29 @@ test('常用开发地址作为独立一级工具进入地址管理页', () => {
   assert.match(managerSource, /label: '常用开发地址'/)
   assert.match(managerSource, /key: 'dev-addresses:projects'/)
   assert.match(managerSource, /<DevAddressManager/)
+  assert.match(devAddressSource, /:draggable="data\.projects\.length > 1 && !sorting"/)
+  assert.match(devAddressSource, /@dragstart="startProjectDrag\(\$event, project\.id\)"/)
+  assert.match(devAddressSource, /@drop\.prevent="dropProject\(\$event, project\.id\)"/)
+  assert.match(devAddressSource, /:draggable="selectedProject\.pages\.length > 1 && !sorting"/)
+  assert.match(devAddressSource, /@dragstart="startPageDrag\(\$event, page\.id\)"/)
+  assert.match(devAddressSource, /@drop\.prevent="dropPage\(\$event, page\.id\)"/)
 })
 
-test('备份与同步保持工作区一级导航', () => {
+test('备份与同步保持工作区一级导航，并统一页面级模块纵向间距', () => {
   assert.match(managerSource, /const workspaceNavItems: NavItem\[\]/)
   assert.match(managerSource, /key: 'backup-sync', label: '备份与同步'/)
   assert.match(managerSource, /<div v-else class="h-full overflow-y-auto p-5 lg:p-7">/)
   assert.match(managerSource, /v-if="activeNav == 'backup-sync'"/)
+  assert.match(backupSyncSource, /class="manager-surface mb-2 flex w-fit items-center gap-1 p-1.5"/)
+  assert.match(importExportSource, /class="grid gap-x-5 gap-y-2 xl:grid-cols-2"/)
+  assert.match(importExportSource, /class="mt-2 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-red-200/)
+  assert.match(syncSource, /class="grid gap-x-5 gap-y-2 xl:grid-cols-\[minmax\(0,1\.4fr\)_minmax\(280px,0\.6fr\)\]"/)
+  assert.match(syncSource, /class="grid gap-x-5 gap-y-2 xl:grid-cols-\[minmax\(0,1\.35fr\)_minmax\(300px,0\.65fr\)\]"/)
+  assert.match(devAddressSource, /class="grid min-h-\[560px\] gap-x-5 gap-y-2 lg:grid-cols-\[280px_minmax\(0,1fr\)\]"/)
+  assert.match(devAddressSource, /class="grid gap-x-4 gap-y-2 xl:grid-cols-\[minmax\(0,1fr\)_minmax\(300px,0\.8fr\)\]"/)
+  assert.match(devAddressSource, /class="mt-2 rounded-xl border border-slate-200 bg-white px-4 py-3/)
+  assert.match(uiStyleGuideSource, /页面级纵向相邻的独立模块：`mb-2` 或父容器 `space-y-2`/)
+  assert.match(uiStyleGuideSource, /`gap-x-5 gap-y-2`/)
 })
 
 test('工具内容采用顶部 Tab 与独立滚动区域', () => {

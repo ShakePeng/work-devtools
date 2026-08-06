@@ -9,11 +9,13 @@ import { useBridgeProfiles } from '@shared/composables/useBridgeProfiles'
 import { useCookieProfiles } from '@shared/composables/useCookieProfiles'
 import { useImportExport } from '@shared/composables/useImportExport'
 import { useWebDavSync } from '@shared/composables/useWebDavSync'
+import { useReleaseUpdate } from '@shared/composables/useReleaseUpdate'
 import {
   type ManagerNavKey,
   parseManagerNav,
 } from '@shared/managerNavigation'
-import { FolderTree, Database, DatabaseBackup, Smartphone, Code2, Cookie, Link2 } from 'lucide-vue-next'
+import { RELEASES_PAGE_URL } from '@shared/releaseUpdate'
+import { FolderTree, Database, DatabaseBackup, Smartphone, Code2, Cookie, Link2, ExternalLink } from 'lucide-vue-next'
 import UnifiedTreeManager from './components/UnifiedTreeManager.vue'
 import BackupSyncPanel from './components/BackupSyncPanel.vue'
 import Toast from './components/Toast.vue'
@@ -67,6 +69,13 @@ const webDavSync = useWebDavSync(workspaceData, saveWorkspaceDataImmediate)
 const toastMsg = ref('')
 const toastType = ref<'success' | 'error' | 'warning'>('success')
 const toastKey = ref(0)
+const extensionVersion = chrome.runtime.getManifest().version
+const {
+  latestVersion,
+  releaseUrl,
+  hasUpdate,
+  check: checkReleaseUpdate,
+} = useReleaseUpdate(extensionVersion)
 
 function showToast(msg: string, type: 'success' | 'error' | 'warning' = 'success') {
   toastMsg.value = msg
@@ -133,7 +142,23 @@ function selectNav(nav: ManagerNavKey): void {
   window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`)
 }
 
+function openReleasePage(url: string): void {
+  void chrome.tabs.create({ url }).catch(error => {
+    console.error('[Work DevTools] 打开 Release 页面失败:', error)
+    showToast('打开 Release 页面失败，请稍后重试', 'error')
+  })
+}
+
+function openReleases(): void {
+  openReleasePage(RELEASES_PAGE_URL)
+}
+
+function openLatestRelease(): void {
+  if (releaseUrl.value) openReleasePage(releaseUrl.value)
+}
+
 onMounted(async () => {
+  void checkReleaseUpdate()
   await loadData()
   startWatchExternal()
   await webDavSync.init()
@@ -220,6 +245,40 @@ onMounted(async () => {
             <span class="block truncate text-sm font-semibold">{{ item.label }}</span>
             <span class="mt-0.5 block truncate text-[10px] opacity-60">{{ item.description }}</span>
           </span>
+        </button>
+      </div>
+
+      <div class="shrink-0 border-t border-slate-100 p-3 dark:border-slate-800">
+        <p class="mb-2 px-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">版本与更新</p>
+        <button
+          class="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800/70 dark:hover:text-slate-100"
+          title="打开 GitHub Releases"
+          @click="openReleases"
+        >
+          <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500">
+            <Database :size="14" />
+          </span>
+          <span class="min-w-0 flex-1">
+            <span class="block text-[10px] font-medium text-slate-400 dark:text-slate-500">插件版本</span>
+            <span class="block truncate text-xs font-semibold text-slate-700 dark:text-slate-200">v{{ extensionVersion }}</span>
+          </span>
+          <ExternalLink :size="13" class="shrink-0 text-slate-300 dark:text-slate-600" />
+        </button>
+
+        <button
+          v-if="hasUpdate"
+          class="mt-1.5 flex w-full items-center gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-2.5 py-2 text-left text-amber-800 transition-colors hover:bg-amber-100 dark:border-amber-900/70 dark:bg-amber-950/40 dark:text-amber-200 dark:hover:bg-amber-950/70"
+          :title="`查看 v${latestVersion} Release`"
+          @click="openLatestRelease"
+        >
+          <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white text-amber-600 shadow-sm dark:bg-slate-900 dark:text-amber-300">
+            <ExternalLink :size="14" />
+          </span>
+          <span class="min-w-0 flex-1">
+            <span class="block truncate text-[11px] font-semibold">发现 v{{ latestVersion }}</span>
+            <span class="block text-[10px] opacity-75">查看最新 Release</span>
+          </span>
+          <ExternalLink :size="13" class="shrink-0 opacity-60" />
         </button>
       </div>
     </nav>

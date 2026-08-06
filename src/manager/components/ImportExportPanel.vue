@@ -105,7 +105,7 @@ const preview = () => props.importExport.importPreview.value
       </div>
     </header>
 
-    <div class="grid gap-5 xl:grid-cols-2">
+    <div class="grid gap-x-5 gap-y-2 xl:grid-cols-2">
       <!-- 导出 -->
       <section class="manager-surface flex min-h-64 flex-col p-6">
         <div class="mb-5 flex items-start justify-between gap-4">
@@ -197,7 +197,7 @@ const preview = () => props.importExport.importPreview.value
     </div>
 
     <!-- 清空 -->
-    <section class="mt-5 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-red-200 bg-red-50/60 p-5 dark:border-red-950 dark:bg-red-950/20">
+    <section class="mt-2 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-red-200 bg-red-50/60 p-5 dark:border-red-950 dark:bg-red-950/20">
       <div class="flex items-start gap-3">
         <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-red-500 shadow-sm dark:bg-slate-900"><AlertTriangle :size="17" /></span>
         <div>

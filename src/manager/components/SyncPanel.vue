@@ -195,7 +195,7 @@ async function handleDisconnect() {
       </span>
     </header>
 
-    <div v-if="!configured" class="grid gap-5 xl:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.6fr)]">
+    <div v-if="!configured" class="grid gap-x-5 gap-y-2 xl:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.6fr)]">
       <section class="manager-surface space-y-5 p-6">
         <div class="flex items-center gap-2">
           <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-50 text-sky-600 dark:bg-sky-950 dark:text-sky-400">
@@ -292,7 +292,7 @@ async function handleDisconnect() {
     </div>
 
     <template v-else>
-      <div class="grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.65fr)]">
+      <div class="grid gap-x-5 gap-y-2 xl:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.65fr)]">
         <section class="manager-surface space-y-5 p-6">
           <div class="flex items-center justify-between gap-3">
             <div>

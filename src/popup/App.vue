@@ -5,7 +5,9 @@ import { usePersons } from '@shared/composables/usePersons'
 import { usePlatforms } from '@shared/composables/usePlatforms'
 import { useCookies } from '@shared/composables/useCookies'
 import { useDeviceProfiles } from '@shared/composables/useDeviceProfiles'
+import { useReleaseUpdate } from '@shared/composables/useReleaseUpdate'
 import { getManagerPagePath, MANAGER_NAV } from '@shared/managerNavigation'
+import { RELEASES_PAGE_URL } from '@shared/releaseUpdate'
 import PersonList from './components/PersonList.vue'
 import Toast from './components/Toast.vue'
 import { Database, ExternalLink, KeyRound, Layers3, Settings, Users } from 'lucide-vue-next'
@@ -22,6 +24,12 @@ const toastMsg = ref('')
 const toastType = ref<'success' | 'error' | 'warning'>('success')
 const toastKey = ref(0)
 const extensionVersion = chrome.runtime.getManifest().version
+const {
+  latestVersion,
+  releaseUrl,
+  hasUpdate,
+  check: checkReleaseUpdate,
+} = useReleaseUpdate(extensionVersion)
 
 watch(
   () => workspaceData.value.updatedAt,
@@ -59,7 +67,23 @@ function openManager() {
   })
 }
 
+function openReleasePage(url: string): void {
+  void chrome.tabs.create({ url }).catch(error => {
+    console.error('[Work DevTools] 打开 Release 页面失败:', error)
+    showToast('打开 Release 页面失败，请稍后重试', 'error')
+  })
+}
+
+function openReleases(): void {
+  openReleasePage(RELEASES_PAGE_URL)
+}
+
+function openLatestRelease(): void {
+  if (releaseUrl.value) openReleasePage(releaseUrl.value)
+}
+
 onMounted(async () => {
+  void checkReleaseUpdate()
   await loadData()
   // 监听管理页面侧的 storage 变更，自动刷新数据
   startWatchExternal()
@@ -134,9 +158,25 @@ onMounted(async () => {
       <PersonList />
     </main>
 
+    <button
+      v-if="hasUpdate"
+      class="mx-2.5 mb-2 flex shrink-0 items-center justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-2 text-left text-[10px] text-amber-800 transition-colors hover:bg-amber-100 dark:border-amber-900/70 dark:bg-amber-950/40 dark:text-amber-200 dark:hover:bg-amber-950/70"
+      :title="`查看 v${latestVersion} Release`"
+      @click="openLatestRelease"
+    >
+      <span class="min-w-0 truncate font-semibold">发现新版本 v{{ latestVersion }}</span>
+      <span class="inline-flex shrink-0 items-center gap-1 font-medium">查看更新 <ExternalLink :size="11" /></span>
+    </button>
+
     <footer class="flex shrink-0 items-center justify-between border-t border-slate-200 bg-white px-3 py-1.5 text-[9px] text-slate-400 dark:border-slate-800 dark:bg-slate-900">
       <span>选择平台后可查看或注入 Cookie</span>
-      <span class="font-medium text-slate-500 dark:text-slate-400">v{{ extensionVersion }}</span>
+      <button
+        class="inline-flex items-center gap-1 rounded px-1 py-0.5 font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+        title="打开 GitHub Releases"
+        @click="openReleases"
+      >
+        v{{ extensionVersion }} <ExternalLink :size="10" />
+      </button>
     </footer>
   </div>
 

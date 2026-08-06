@@ -23,6 +23,7 @@ const {
   normalizeDevAddressesData,
   normalizeDevBaseUrl,
   normalizeDevPagePath,
+  reorderItemsById,
   regenerateDevAddressIds,
 } = devAddresses
 
@@ -92,6 +93,25 @@ test('项目必须包含唯一环境、唯一页面和有效默认环境', () =>
       ],
     })],
   }), /页面名称.*重复/)
+})
+
+test('拖拽排序按目标前后重排，并跳过无变化的顺序', () => {
+  const items = [
+    { id: 'first', name: '第一项' },
+    { id: 'second', name: '第二项' },
+    { id: 'third', name: '第三项' },
+  ]
+
+  assert.deepEqual(
+    reorderItemsById(items, 'third', 'first', 'before').map(item => item.id),
+    ['third', 'first', 'second']
+  )
+  assert.deepEqual(
+    reorderItemsById(items, 'first', 'third', 'after').map(item => item.id),
+    ['second', 'third', 'first']
+  )
+  assert.equal(reorderItemsById(items, 'first', 'second', 'before'), items)
+  assert.equal(reorderItemsById(items, 'missing', 'second', 'after'), items)
 })
 
 test('覆盖导入重建全部 ID 并映射默认环境', () => {
