@@ -1,0 +1,12 @@
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "573d3bd5c0fb327258542c68798fe4a545bf4462",
+  "prompts": {},
+  "humans": {
+    "h_3679faea415d4d": {
+      "author": "彭振东 <pzd6391@ly.com>"
+    }
+  }
+}
