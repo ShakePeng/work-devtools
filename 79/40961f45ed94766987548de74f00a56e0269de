@@ -1,0 +1,64 @@
+src/shared/releaseUpdate.ts
+  s_bd76ec03b7208f::t_565b56fd46b1a6 1-214
+tests/work-devtools-branding.test.mjs
+  s_bd76ec03b7208f::t_b2212952e28d10 75
+  s_bd76ec03b7208f::t_312e529a4b8a07 62-67
+  s_bd76ec03b7208f::t_7814de9d4c2cca 5,15-18,70,76-84
+  s_bd76ec03b7208f::t_b10772ebeb36e0 14
+README.md
+  s_bd76ec03b7208f::t_6f4dee44757804 124-129,244
+  s_bd76ec03b7208f::t_312e529a4b8a07 26,168-170
+src/manager/components/SyncPanel.vue
+  s_bd76ec03b7208f::t_7814de9d4c2cca 198,295
+src/manager/App.vue
+  s_bd76ec03b7208f::t_a4df9995da6962 12,17-18,72,145-156,158-159,250-268,270,272-277,279-282
+  s_bd76ec03b7208f::t_041257277fdffd 73-78,157,161,269,271,278
+  s_bd76ec03b7208f::t_a4f866f2172edb 283
+docs/ui-style-guide.md
+  s_bd76ec03b7208f::t_7814de9d4c2cca 59-60,118,220
+tests/release-update.test.mjs
+  s_bd76ec03b7208f::t_041257277fdffd 57,76-80,202-204,207-209
+  s_bd76ec03b7208f::t_84a5a498b79323 1-56,58-75,81-201,205-206,210-212
+src/shared/storageKeys.ts
+  s_bd76ec03b7208f::t_565b56fd46b1a6 11-13
+tests/dev-addresses.test.mjs
+  s_bd76ec03b7208f::t_312e529a4b8a07 26,98-114
+  s_bd76ec03b7208f::t_4a4721a33c6848 115-116
+src/shared/composables/useReleaseUpdate.ts
+  s_bd76ec03b7208f::t_565b56fd46b1a6 1-39
+src/popup/App.vue
+  s_bd76ec03b7208f::t_041257277fdffd 27-32,82,86,162,164,167
+  s_bd76ec03b7208f::t_a4df9995da6962 8,10,70-81,83-84,161,163,165-166,168-170,173-179
+src/manager/components/ImportExportPanel.vue
+  s_bd76ec03b7208f::t_7814de9d4c2cca 108,200
+src/manager/components/BackupSyncPanel.vue
+  s_bd76ec03b7208f::t_b2212952e28d10 36
+docs/releases/1.0.1.md
+  s_bd76ec03b7208f::t_312e529a4b8a07 11,35
+  s_bd76ec03b7208f::t_6f4dee44757804 25-26
+src/shared/devAddresses.ts
+  s_bd76ec03b7208f::t_5a9efbde03ce7d 10-11,35-52
+  s_bd76ec03b7208f::t_f501610ef2667d 53-54
+src/manager/components/DevAddressManager.vue
+  s_bd76ec03b7208f::t_5d925fbf1d8d54 14-15,47-48,53-57,113-192,194-207,209-223
+  s_bd76ec03b7208f::t_651be25e2a6ca4 193,208
+  s_bd76ec03b7208f::t_772f5b7b97e8cf 498-506,508-509,512-522,625-644
+  s_bd76ec03b7208f::t_7814de9d4c2cca 477,559,610
+  s_bd76ec03b7208f::t_dae7539e9ce343 224
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "7940961f45ed94766987548de74f00a56e0269de",
+  "prompts": {},
+  "sessions": {
+    "s_bd76ec03b7208f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fd12e-f024-7ac1-a6bc-f3d34c7637f9",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "彭振东 <pzd6391@ly.com>"
+    }
+  }
+}
