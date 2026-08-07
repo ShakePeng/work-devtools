@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { test } from 'node:test'
 
-const [packageJson, wxtSource, managerSource, popupSource, managerHtml, popupHtml, storageKeysSource, dataManagerSource, backupSyncSource, importExportSource, syncSource, devAddressSource, uiStyleGuideSource] = await Promise.all([
+const [packageJson, wxtSource, managerSource, popupSource, managerHtml, popupHtml, storageKeysSource, dataManagerSource, backupSyncSource, importExportSource, syncSource, devAddressSource, devAddressJsonEditorSource, cookieInjectorJsonEditorSource, jsonEditorDialogSource, uiStyleGuideSource] = await Promise.all([
   readFile(new URL('../package.json', import.meta.url), 'utf8').then(JSON.parse),
   readFile(new URL('../wxt.config.ts', import.meta.url), 'utf8'),
   readFile(new URL('../src/manager/App.vue', import.meta.url), 'utf8'),
@@ -15,6 +15,9 @@ const [packageJson, wxtSource, managerSource, popupSource, managerHtml, popupHtm
   readFile(new URL('../src/manager/components/ImportExportPanel.vue', import.meta.url), 'utf8'),
   readFile(new URL('../src/manager/components/SyncPanel.vue', import.meta.url), 'utf8'),
   readFile(new URL('../src/manager/components/DevAddressManager.vue', import.meta.url), 'utf8'),
+  readFile(new URL('../src/manager/components/DevAddressJsonEditorDialog.vue', import.meta.url), 'utf8'),
+  readFile(new URL('../src/manager/components/CookieInjectorJsonEditorDialog.vue', import.meta.url), 'utf8'),
+  readFile(new URL('../src/manager/components/JsonEditorDialog.vue', import.meta.url), 'utf8'),
   readFile(new URL('../docs/ui-style-guide.md', import.meta.url), 'utf8'),
 ])
 
@@ -67,6 +70,57 @@ test('常用开发地址作为独立一级工具进入地址管理页', () => {
   assert.match(devAddressSource, /@drop\.prevent="dropPage\(\$event, page\.id\)"/)
 })
 
+test('常用开发地址只保留 JSON 按钮并通过独立弹框编辑工具数据', () => {
+  assert.equal((devAddressSource.match(/@click="jsonEditorOpen = true"/g) || []).length, 1)
+  assert.match(devAddressSource, /<Braces :size="16" \/>JSON/)
+  assert.match(devAddressSource, /<DevAddressJsonEditorDialog/)
+  assert.match(devAddressSource, /:data="data"/)
+  assert.match(devAddressSource, /:save-data="saveData"/)
+  assert.doesNotMatch(devAddressSource, /type ViewMode/)
+  assert.doesNotMatch(devAddressSource, /常用开发地址编辑模式/)
+  assert.doesNotMatch(devAddressSource, /v-model="jsonText"/)
+  assert.doesNotMatch(devAddressSource, /view-switch|json-toolbar-button/)
+
+  assert.match(jsonEditorDialogSource, /h-\[80vh\].*max-w-5xl/)
+  assert.match(jsonEditorDialogSource, /JSON\.stringify\(props\.data, null, 2\)/)
+  assert.match(jsonEditorDialogSource, /import\('codemirror'\)/)
+  assert.match(jsonEditorDialogSource, /import\('@codemirror\/lang-json'\)/)
+  assert.match(jsonEditorDialogSource, /import\('@codemirror\/lint'\)/)
+  assert.match(jsonEditorDialogSource, /import\('@codemirror\/commands'\)/)
+  assert.match(jsonEditorDialogSource, /import\('@codemirror\/theme-one-dark'\)/)
+  assert.match(jsonEditorDialogSource, /\boneDark,\s*editorLayoutTheme,/)
+  assert.doesNotMatch(jsonEditorDialogSource, /backgroundColor: '#020617'|color: '#d1fae5'/)
+  assert.match(jsonEditorDialogSource, /linter\(jsonParseLinter\(\)\)/)
+  assert.match(jsonEditorDialogSource, /lintGutter\(\)/)
+  assert.match(jsonEditorDialogSource, /EditorView\.lineWrapping/)
+  assert.match(jsonEditorDialogSource, /event\.key != 'Tab'/)
+  assert.match(devAddressJsonEditorSource, /:normalize-data="normalizeDevAddressesData"/)
+  assert.match(devAddressJsonEditorSource, /await props\.saveData\(data as DevAddressesData\)/)
+  assert.match(devAddressJsonEditorSource, /scope-path="tools\.devAddresses"/)
+  assert.match(devAddressJsonEditorSource, /确认覆盖常用开发地址/)
+  assert.doesNotMatch(devAddressJsonEditorSource, /parsed\.tools/)
+
+  assert.ok(packageJson.dependencies.codemirror)
+  assert.ok(packageJson.dependencies['@codemirror/lang-json'])
+  assert.ok(packageJson.dependencies['@codemirror/lint'])
+  assert.ok(packageJson.dependencies['@codemirror/commands'])
+  assert.ok(packageJson.dependencies['@codemirror/theme-one-dark'])
+})
+
+test('常用开发地址 JSON 弹框覆盖编辑、校验和关闭保护', () => {
+  assert.match(jsonEditorDialogSource, /function formatJson\(\)/)
+  assert.match(jsonEditorDialogSource, /JSON\.stringify\(JSON\.parse\(jsonText\.value\), null, 2\)/)
+  assert.match(jsonEditorDialogSource, /function restoreJson\(\)/)
+  assert.match(jsonEditorDialogSource, /syntaxError\.value = \(error as Error\)\.message/)
+  assert.match(jsonEditorDialogSource, /businessError\.value = \(error as Error\)\.message/)
+  assert.match(jsonEditorDialogSource, /overwriteConfirmed\.value = false/)
+  assert.match(jsonEditorDialogSource, /window\.confirm\('存在未保存的 JSON 修改，确定关闭吗？'\)/)
+  assert.match(jsonEditorDialogSource, /event\.key != 'Escape'/)
+  assert.match(jsonEditorDialogSource, /overlayPressOnOverlay = event\.target == event\.currentTarget/)
+  assert.match(jsonEditorDialogSource, /emit\('toast', props\.successMessage, 'success'\)\s*emit\('close'\)/)
+  assert.match(jsonEditorDialogSource, /保存 JSON 失败/)
+})
+
 test('备份与同步保持工作区一级导航，并统一页面级模块纵向间距', () => {
   assert.match(managerSource, /const workspaceNavItems: NavItem\[\]/)
   assert.match(managerSource, /key: 'backup-sync', label: '备份与同步'/)
@@ -90,15 +144,23 @@ test('工具内容采用顶部 Tab 与独立滚动区域', () => {
   assert.match(managerSource, /activeNav == 'cookie-injector:data' \? 'overflow-hidden p-3' : 'overflow-y-auto p-5 lg:p-7'/)
 })
 
-test('侧栏不再固定展示 Cookie Injector 统计，JSON 仅编辑 Cookie Injector 数据', () => {
+test('Cookie Injector 只保留 JSON 按钮并通过独立弹框编辑工具数据', () => {
   assert.doesNotMatch(managerSource, /Cookie Injector 数据/)
   assert.doesNotMatch(managerSource, /stats\.persons/)
-  assert.match(dataManagerSource, /JSON\.stringify\(storageData\.value, null, 2\)/)
-  assert.match(dataManagerSource, /await saveDataImmediate\(parsed\)/)
-  assert.match(dataManagerSource, /const cookieInjector = parsed/)
-  assert.match(dataManagerSource, /当前内容对应 tools\.cookieInjector/)
+  assert.equal((dataManagerSource.match(/@click="jsonEditorOpen = true"/g) || []).length, 1)
+  assert.match(dataManagerSource, /<CookieInjectorJsonEditorDialog/)
+  assert.match(dataManagerSource, /:data="storageData"/)
+  assert.match(dataManagerSource, /:validate-data="normalizeCookieInjectorJsonData"/)
+  assert.match(dataManagerSource, /:save-data="saveDataImmediate"/)
+  assert.match(dataManagerSource, /return cookieInjector as CookieData/)
+  assert.doesNotMatch(dataManagerSource, /type ViewMode|view-switch|v-model="jsonText"/)
+
+  assert.match(cookieInjectorJsonEditorSource, /scope-path="tools\.cookieInjector"/)
+  assert.match(cookieInjectorJsonEditorSource, /确认覆盖 Cookie Injector/)
+  assert.match(cookieInjectorJsonEditorSource, /Cookie Injector JSON 已保存/)
+  assert.match(cookieInjectorJsonEditorSource, /await props\.saveData\(data as CookieData\)/)
   assert.doesNotMatch(dataManagerSource, /全局 JSON/)
-  assert.doesNotMatch(dataManagerSource, /parsed\.tools\.cookieInjector/)
+  assert.doesNotMatch(cookieInjectorJsonEditorSource, /parsed\.tools\.cookieInjector/)
 })
 
 test('Bridge 会话键包含品牌与工具命名空间', () => {

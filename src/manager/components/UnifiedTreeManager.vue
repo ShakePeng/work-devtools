@@ -30,8 +30,9 @@ import {
 import { requirePlatformName } from '@shared/constants/platforms'
 import {
   Braces, ClipboardPaste, KeyRound, LayoutPanelLeft, Monitor, MoreHorizontal,
-  Plus, RotateCcw, Save, Search, Users, X,
+  Plus, Search, Users, X,
 } from 'lucide-vue-next'
+import CookieInjectorJsonEditorDialog from './CookieInjectorJsonEditorDialog.vue'
 import DataManagerNavigation from './DataManagerNavigation.vue'
 import DataManagerContent from './DataManagerContent.vue'
 import EntityEditorDrawer from './EntityEditorDrawer.vue'
@@ -52,7 +53,6 @@ const saveDataImmediate = inject<(data: CookieData) => Promise<void>>(
   async () => {}
 )
 
-type ViewMode = 'structured' | 'json'
 type DeleteTarget = {
   type: 'person' | 'platform' | 'cookie'
   id: string
@@ -61,7 +61,6 @@ type DeleteTarget = {
   platformId?: string
 }
 
-const viewMode = ref<ViewMode>('structured')
 const selection = ref<Selection>(null)
 const expandedPersons = ref<Set<string>>(new Set())
 const mobileNavOpen = ref(false)
@@ -75,11 +74,7 @@ const editorError = ref<string | null>(null)
 const editorSaving = ref(false)
 const editorConfirmation = ref<{ title: string; message: string; action: () => Promise<void> } | null>(null)
 const deleteTarget = ref<DeleteTarget | null>(null)
-
-const jsonText = ref('')
-const jsonSnapshot = ref('')
-const jsonError = ref<string | null>(null)
-const jsonConfirm = ref(false)
+const jsonEditorOpen = ref(false)
 
 const persons = computed<Person[]>(() => personsApi.list())
 const uaInjectionEnabled = computed(() => deviceProfilesApi.isUaInjectionEnabled())
@@ -137,8 +132,6 @@ const hasSearchResults = computed(() =>
   searchGroups.value.persons.length + searchGroups.value.platforms.length + searchGroups.value.cookies.length > 0
 )
 
-const jsonDirty = computed(() => jsonText.value !== jsonSnapshot.value)
-
 watch(
   persons,
   current => {
@@ -153,11 +146,6 @@ watch(
   },
   { immediate: true }
 )
-
-watch(jsonText, value => {
-  jsonConfirm.value = false
-  jsonError.value = validateCookieInjectorData(value)
-})
 
 function togglePerson(personId: string) {
   const next = new Set(expandedPersons.value)
@@ -597,50 +585,6 @@ async function copyText(value: string, successMessage: string) {
   showToast(successMessage, 'success')
 }
 
-function enterJson() {
-  if (viewMode.value === 'json') return
-  jsonSnapshot.value = JSON.stringify(storageData.value, null, 2)
-  jsonText.value = jsonSnapshot.value
-  jsonError.value = null
-  jsonConfirm.value = false
-  viewMode.value = 'json'
-}
-
-function showStructuredView() {
-  if (viewMode.value === 'json') exitJson()
-  else viewMode.value = 'structured'
-}
-
-function exitJson() {
-  if (jsonDirty.value && !window.confirm('存在未保存的 JSON 修改，确定退出吗？')) return
-  viewMode.value = 'structured'
-  jsonConfirm.value = false
-}
-
-async function saveJson() {
-  if (jsonError.value) return
-  if (!jsonDirty.value) {
-    showToast('数据未修改', 'warning')
-    return
-  }
-  if (!jsonConfirm.value) {
-    jsonConfirm.value = true
-    return
-  }
-  const parsed = JSON.parse(jsonText.value) as CookieData
-  await saveDataImmediate(parsed)
-  jsonSnapshot.value = JSON.stringify(storageData.value, null, 2)
-  jsonText.value = jsonSnapshot.value
-  jsonConfirm.value = false
-  showToast('JSON 已保存', 'success')
-}
-
-function restoreJson() {
-  jsonText.value = jsonSnapshot.value
-  jsonError.value = null
-  jsonConfirm.value = false
-}
-
 function blurSearchSoon() {
   window.setTimeout(() => { searchFocused.value = false }, 150)
 }
@@ -829,37 +773,51 @@ function assertKnownDeviceProfile(profileId?: string) {
   }
 }
 
-function validateCookieInjectorData(value: string): string | null {
-  if (!value.trim()) return 'JSON 内容不能为空。'
-  try {
-    const parsed = JSON.parse(value)
-    assertObject(parsed, 'Cookie Injector 数据')
-    const cookieInjector = parsed
-    if (!Array.isArray(cookieInjector.persons)) return 'persons 必须为数组。'
-    if (cookieInjector.deviceProfiles != undefined && !Array.isArray(cookieInjector.deviceProfiles)) return 'deviceProfiles 必须为数组。'
-    if (cookieInjector.bridgeProviders != undefined && !Array.isArray(cookieInjector.bridgeProviders)) return 'bridgeProviders 必须为数组。'
-    if (cookieInjector.bridgeMethods != undefined && !Array.isArray(cookieInjector.bridgeMethods)) return 'bridgeMethods 必须为数组。'
-    if (cookieInjector.cookiePresetGroups != undefined && !Array.isArray(cookieInjector.cookiePresetGroups)) return 'cookiePresetGroups 必须为数组。'
-    if (cookieInjector.cookiePresets != undefined && !Array.isArray(cookieInjector.cookiePresets)) return 'cookiePresets 必须为数组。'
-    const normalizedProviders = normalizeBridgeProviders(cookieInjector.bridgeProviders)
-    const normalizedMethods = normalizeBridgeMethods(cookieInjector.bridgeMethods, normalizedProviders)
-    const usedIds = new Set<string>()
-    for (const person of cookieInjector.persons) {
-      assertObject(person, '人员')
-      const personId = requireName(person.id, '人员 ID')
-      if (usedIds.has(personId)) return `发现重复 ID：${personId}`
-      usedIds.add(personId)
-      if (!Array.isArray(person.platforms)) return `人员「${person.name || personId}」缺少 platforms 数组。`
-      for (const platform of person.platforms) {
-        const validated = validatePlatformEntity(platform, requireName(platform?.id, '平台 ID'), usedIds, normalizedMethods)
-        const current = selectedOrFindPlatform(validated.id)
-        if (current && current.mode != validated.mode) return `平台「${current.name}」的模式创建后不可修改。`
+function normalizeCookieInjectorJsonData(value: unknown): CookieData {
+  assertObject(value, 'Cookie Injector 数据')
+  const cookieInjector = value
+  if (!Array.isArray(cookieInjector.persons)) throw new Error('persons 必须为数组。')
+  if (cookieInjector.deviceProfiles != undefined && !Array.isArray(cookieInjector.deviceProfiles)) {
+    throw new Error('deviceProfiles 必须为数组。')
+  }
+  if (cookieInjector.bridgeProviders != undefined && !Array.isArray(cookieInjector.bridgeProviders)) {
+    throw new Error('bridgeProviders 必须为数组。')
+  }
+  if (cookieInjector.bridgeMethods != undefined && !Array.isArray(cookieInjector.bridgeMethods)) {
+    throw new Error('bridgeMethods 必须为数组。')
+  }
+  if (cookieInjector.cookiePresetGroups != undefined && !Array.isArray(cookieInjector.cookiePresetGroups)) {
+    throw new Error('cookiePresetGroups 必须为数组。')
+  }
+  if (cookieInjector.cookiePresets != undefined && !Array.isArray(cookieInjector.cookiePresets)) {
+    throw new Error('cookiePresets 必须为数组。')
+  }
+
+  const normalizedProviders = normalizeBridgeProviders(cookieInjector.bridgeProviders)
+  const normalizedMethods = normalizeBridgeMethods(cookieInjector.bridgeMethods, normalizedProviders)
+  const usedIds = new Set<string>()
+  for (const person of cookieInjector.persons) {
+    assertObject(person, '人员')
+    const personId = requireName(person.id, '人员 ID')
+    if (usedIds.has(personId)) throw new Error(`发现重复 ID：${personId}`)
+    usedIds.add(personId)
+    if (!Array.isArray(person.platforms)) {
+      throw new Error(`人员「${person.name || personId}」缺少 platforms 数组。`)
+    }
+    for (const platform of person.platforms) {
+      const validated = validatePlatformEntity(
+        platform,
+        requireName(platform?.id, '平台 ID'),
+        usedIds,
+        normalizedMethods
+      )
+      const current = selectedOrFindPlatform(validated.id)
+      if (current && current.mode != validated.mode) {
+        throw new Error(`平台「${current.name}」的模式创建后不可修改。`)
       }
     }
-    return null
-  } catch (error) {
-    return (error as Error).message
   }
+  return cookieInjector as CookieData
 }
 </script>
 
@@ -878,7 +836,7 @@ function validateCookieInjectorData(value: string): string | null {
         </div>
       </div>
 
-      <div v-if="viewMode === 'structured'" class="relative order-last w-full sm:order-none sm:w-72">
+      <div class="relative order-last w-full sm:order-none sm:w-72">
         <Search :size="15" class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
         <input
           v-model="searchQuery"
@@ -913,12 +871,9 @@ function validateCookieInjectorData(value: string): string | null {
         </div>
       </div>
 
-      <div class="flex items-center rounded-xl bg-slate-100 p-1 dark:bg-slate-900">
-        <button class="view-switch" :class="viewMode === 'structured' ? 'view-switch-active' : ''" @click="showStructuredView"><LayoutPanelLeft :size="14" />结构化</button>
-        <button class="view-switch" :class="viewMode === 'json' ? 'view-switch-active' : ''" @click="enterJson"><Braces :size="14" />JSON</button>
-      </div>
-      <button v-if="viewMode === 'structured'" class="inline-flex items-center gap-1.5 rounded-xl bg-sky-600 px-3.5 py-2 text-sm font-medium text-white shadow-sm hover:bg-sky-700" @click="openAddPerson"><Plus :size="16" />添加人员</button>
-      <div v-if="viewMode === 'structured'" class="relative" @click.stop>
+      <button class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-600 shadow-sm transition-colors hover:border-sky-300 hover:text-sky-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-sky-800 dark:hover:text-sky-300" @click="jsonEditorOpen = true"><Braces :size="15" />JSON</button>
+      <button class="inline-flex items-center gap-1.5 rounded-xl bg-sky-600 px-3.5 py-2 text-sm font-medium text-white shadow-sm hover:bg-sky-700" @click="openAddPerson"><Plus :size="16" />添加人员</button>
+      <div class="relative" @click.stop>
         <button class="rounded-xl border border-slate-200 bg-white p-2 text-slate-500 shadow-sm hover:text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:text-white" title="页面更多操作" @click="pageMenuOpen = !pageMenuOpen"><MoreHorizontal :size="17" /></button>
         <div v-if="pageMenuOpen" class="absolute right-0 top-11 z-50 w-48 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl dark:border-slate-700 dark:bg-slate-900">
           <button class="search-result" @click="openImportPerson"><ClipboardPaste :size="14" />粘贴导入人员</button>
@@ -926,7 +881,7 @@ function validateCookieInjectorData(value: string): string | null {
       </div>
     </header>
 
-    <div v-if="viewMode === 'structured'" class="relative flex min-h-0 flex-1 overflow-hidden">
+    <div class="relative flex min-h-0 flex-1 overflow-hidden">
       <div v-if="mobileNavOpen" class="absolute inset-0 z-30 bg-slate-950/35 lg:hidden" @click="mobileNavOpen = false" />
       <div class="absolute inset-y-0 left-0 z-40 transition-transform lg:static lg:translate-x-0" :class="mobileNavOpen ? 'translate-x-0' : '-translate-x-full'">
         <DataManagerNavigation
@@ -963,23 +918,14 @@ function validateCookieInjectorData(value: string): string | null {
       />
     </div>
 
-    <div v-else class="flex min-h-0 flex-1 flex-col bg-slate-950">
-      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 bg-slate-900 px-4 py-3">
-        <div>
-          <p class="text-sm font-semibold text-slate-100">JSON 编辑</p>
-          <p class="mt-0.5 text-xs text-slate-400">当前内容对应 tools.cookieInjector，仅保存 Cookie Injector 数据。</p>
-        </div>
-        <div class="flex items-center gap-2">
-          <span v-if="jsonError" class="rounded-full bg-red-950 px-2 py-1 text-[11px] text-red-300">格式错误</span>
-          <span v-else-if="jsonDirty" class="rounded-full bg-amber-950 px-2 py-1 text-[11px] text-amber-300">已修改</span>
-          <button class="json-toolbar-button" @click="exitJson">退出</button>
-          <button class="json-toolbar-button" @click="restoreJson"><RotateCcw :size="13" />还原</button>
-          <button class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-white disabled:opacity-40" :class="jsonConfirm ? 'bg-red-600 hover:bg-red-700' : 'bg-sky-600 hover:bg-sky-700'" :disabled="!!jsonError" @click="saveJson"><Save :size="13" />{{ jsonConfirm ? '确认覆盖 Cookie Injector' : '保存' }}</button>
-        </div>
-      </div>
-      <div v-if="jsonError" class="border-b border-red-900 bg-red-950/60 px-4 py-2 text-xs text-red-300">{{ jsonError }}</div>
-      <textarea v-model="jsonText" class="min-h-0 flex-1 resize-none bg-slate-950 p-5 font-mono text-xs leading-6 text-emerald-300 outline-none" spellcheck="false" />
-    </div>
+    <CookieInjectorJsonEditorDialog
+      v-if="jsonEditorOpen"
+      :data="storageData"
+      :validate-data="normalizeCookieInjectorJsonData"
+      :save-data="saveDataImmediate"
+      @close="jsonEditorOpen = false"
+      @toast="showToast"
+    />
 
     <EntityEditorDrawer
       :state="editorState"
@@ -1023,19 +969,7 @@ function validateCookieInjectorData(value: string): string | null {
 </template>
 
 <style scoped>
-.view-switch {
-  @apply inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-400 transition-colors hover:text-slate-700 dark:hover:text-slate-200;
-}
-
-.view-switch-active {
-  @apply bg-white text-slate-800 shadow-sm dark:bg-slate-800 dark:text-white;
-}
-
 .search-result {
   @apply flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs text-slate-600 transition-colors hover:bg-sky-50 hover:text-sky-700 dark:text-slate-300 dark:hover:bg-sky-950 dark:hover:text-sky-300;
-}
-
-.json-toolbar-button {
-  @apply inline-flex items-center gap-1.5 rounded-lg bg-slate-800 px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-700 hover:text-white;
 }
 </style>

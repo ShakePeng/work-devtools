@@ -2,7 +2,7 @@
 
 > 面向开发与测试场景的浏览器工具集
 
-当前版本：`1.0.1` · [查看 v1.0.1 版本说明](docs/releases/1.0.1.md)
+当前版本：`1.0.2` · [查看 v1.0.2 版本说明](docs/releases/1.0.2.md)
 
 Work DevTools 是一个 Chrome 扩展（Manifest V3），用于集中承载常用开发辅助工具。当前内置 **Cookie Injector** 和 **常用开发地址**：前者管理 Cookie 与 Bridge 注入，后者按「项目 → 环境 / 页面」维护可复用的开发地址。全部工具数据均可通过 JSON 或 NAS WebDAV 备份同步。
 
@@ -13,6 +13,7 @@ Work DevTools 是一个 Chrome 扩展（Manifest V3），用于集中承载常�
 - **一键注入**：点击平台即可把其下所有 Cookie 注入到当前标签页域名
 - **设备预设注入**：平台可绑定微信、同程App等 UA 预设，注入 Cookie 时同步覆盖当前标签页的 User-Agent
 - **UA 注入总开关**：统一控制 UA 的绑定和注入；关闭时使用浏览器默认 UA，设备预设页仍可正常查看和维护
+- **JSON 弹框编辑**：数据管理页面保持结构化界面，通过右上角「JSON」按钮在 One Dark 编辑器弹框中批量编辑 `tools.cookieInjector`
 - **导入 / 导出**：支持 JSON 格式全量导入导出，方便团队共享与备份
 - **跨设备同步**：使用 NAS WebDAV 手动推送/拉取，结合时间戳与 ETag 检测覆盖冲突
 - **暗色模式**：支持浅色 / 深色主题切换
@@ -24,6 +25,7 @@ Work DevTools 是一个 Chrome 扩展（Manifest V3），用于集中承载常�
 - **环境地址复用**：每个环境保存独立 HTTP/HTTPS 地址，可包含端口、基础 path、查询参数或锚点，并记录跨设备同步的默认环境
 - **页面 path 复用**：新建项目默认包含“健康检查 /health”，页面地址可按当前环境复制或在新标签页跳转
 - **拖拽排序**：拖动项目或页面图标即可调整展示顺序，结果会自动保存并参与备份同步
+- **JSON 弹框编辑**：点击页面右上角「JSON」按钮，在 One Dark 编辑器弹框中批量修改 `tools.devAddresses` 数据并在保存前完成语法和业务校验
 - **Wiki 快捷操作**：支持复制 Wiki 地址或直接在新标签页打开
 - **右键直达工具**：右键扩展图标可直接进入 Cookie Injector 或常用开发地址设置页
 
@@ -111,12 +113,12 @@ WXT 会在 `.output/` 目录下生成 Chrome 扩展 zip，可直接发给别人�
 
 ### GitHub Release 自动发布
 
-仓库通过 GitHub Actions 在推送 `v*` 标签时自动执行测试、打包 Chrome 扩展并创建 GitHub Release。标签版本必须与 `package.json` 中的版本一致，并且必须提前创建 `docs/releases/<version>.md`，工作流会将该文件作为 Release Notes。
+仓库通过 GitHub Actions 在推送 `v*` 标签时自动执行测试、打包 Chrome 扩展并创建 GitHub Release。标签版本必须与 `package.json` 中的版本一致，并且必须提前创建 `docs/releases/<version>.md`。工作流会将该文件作为 Release Notes，但会过滤仅供仓库追溯的 `## 验证结果` 小节。
 
 ```bash
-# 示例：package.json 版本已经更新为 1.0.1
-git tag v1.0.1
-git push origin v1.0.1
+# 示例：package.json 版本已经更新为 1.0.2
+git tag v1.0.2
+git push origin v1.0.2
 ```
 
 发布产物名称为 `work-devtools-<version>-chrome.zip`。同一标签重新运行工作流时，会覆盖 Release 中已有的同名 ZIP。
@@ -128,6 +130,7 @@ git push origin v1.0.1
 版本检查缓存保存在独立的 `chrome.storage.local` 键中，不会进入 Work DevTools 业务数据、JSON 导出或 WebDAV 同步。
 
 - [版本发布规范](docs/releases/README.md)
+- [v1.0.2 版本说明](docs/releases/1.0.2.md)
 - [v1.0.1 版本说明](docs/releases/1.0.1.md)
 - [v1.0.0 版本说明](docs/releases/1.0.0.md)
 
@@ -166,8 +169,9 @@ UA 覆盖需要 Chrome 的调试权限，只会作用于当前标签页，关闭
 2. 添加项目，填写至少一个环境名称和完整 HTTP/HTTPS 域名
 3. 新建项目会包含“健康检查 /health”，也可继续添加其他常用页面
 4. 拖动项目或页面左侧图标，可调整对应列表的展示顺序
-5. 点击「复制完整地址」获得组合地址，或点击「跳转」在新标签页打开
-6. 项目设置了 Wiki 时，可选择复制地址或在新标签页打开
+5. 需要批量调整时点击页面右上角「JSON」按钮，在弹框中校验并确认覆盖后保存
+6. 点击「复制完整地址」获得组合地址，或点击「跳转」在新标签页打开
+7. 项目设置了 Wiki 时，可选择复制地址或在新标签页打开
 
 ### 导入 / 导出
 

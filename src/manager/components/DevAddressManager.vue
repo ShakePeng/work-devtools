@@ -14,8 +14,10 @@ import {
   reorderItemsById,
   type SortPosition,
 } from '@shared/devAddresses'
+import DevAddressJsonEditorDialog from './DevAddressJsonEditorDialog.vue'
 import {
   BookOpen,
+  Braces,
   Check,
   Copy,
   ExternalLink,
@@ -74,6 +76,33 @@ const pagePath = ref('')
 const pageError = ref<string | null>(null)
 const pageSaving = ref(false)
 
+const jsonEditorOpen = ref(false)
+
+// 蒙层关闭保护：只有「按下和松开都发生在蒙层元素本身上」才算点击蒙层并关闭；
+// 从抽屉内拖拽/选中文字滑到蒙层上松手时不会误关闭弹框。
+let projectOverlayPressOnOverlay = false
+let pageOverlayPressOnOverlay = false
+
+function handleProjectOverlayMousedown(event: MouseEvent): void {
+  projectOverlayPressOnOverlay = event.target === event.currentTarget
+}
+
+function closeProjectEditorFromOverlay(event: MouseEvent): void {
+  if (!projectOverlayPressOnOverlay) return
+  if (event.target !== event.currentTarget) return
+  projectEditorOpen.value = false
+}
+
+function handlePageOverlayMousedown(event: MouseEvent): void {
+  pageOverlayPressOnOverlay = event.target === event.currentTarget
+}
+
+function closePageEditorFromOverlay(event: MouseEvent): void {
+  if (!pageOverlayPressOnOverlay) return
+  if (event.target !== event.currentTarget) return
+  pageEditorOpen.value = false
+}
+
 const selectedProject = computed(() =>
   props.data.projects.find(project => project.id == selectedProjectId.value) || null
 )
@@ -99,6 +128,13 @@ watch(
   },
   { immediate: true }
 )
+
+function forwardToast(
+  message: string,
+  type: 'success' | 'error' | 'warning'
+): void {
+  emit('toast', message, type)
+}
 
 function cloneData(): DevAddressesData {
   return {
@@ -466,12 +502,20 @@ async function confirmDelete(): Promise<void> {
           <p class="manager-page-description">按项目维护环境域名和页面 path，选择默认环境后可快速复制完整页面地址。</p>
         </div>
       </div>
-      <button
-        class="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-700"
-        @click="openAddProject"
-      >
-        <Plus :size="16" />添加项目
-      </button>
+      <div class="flex flex-wrap items-center justify-end gap-2">
+        <button
+          class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 shadow-sm transition-colors hover:border-sky-300 hover:text-sky-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-sky-800 dark:hover:text-sky-300"
+          @click="jsonEditorOpen = true"
+        >
+          <Braces :size="16" />JSON
+        </button>
+        <button
+          class="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-700"
+          @click="openAddProject"
+        >
+          <Plus :size="16" />添加项目
+        </button>
+      </div>
     </header>
 
     <div class="grid min-h-[560px] gap-x-5 gap-y-2 lg:grid-cols-[280px_minmax(0,1fr)]">
@@ -671,8 +715,21 @@ async function confirmDelete(): Promise<void> {
       </section>
     </div>
 
+    <DevAddressJsonEditorDialog
+      v-if="jsonEditorOpen"
+      :data="data"
+      :save-data="saveData"
+      @close="jsonEditorOpen = false"
+      @toast="forwardToast"
+    />
+
     <Teleport to="body">
-      <div v-if="projectEditorOpen" class="fixed inset-0 z-[80] flex justify-end bg-slate-950/45 backdrop-blur-[1px]" @click.self="projectEditorOpen = false">
+      <div
+        v-if="projectEditorOpen"
+        class="fixed inset-0 z-[80] flex justify-end bg-slate-950/45 backdrop-blur-[1px]"
+        @mousedown="handleProjectOverlayMousedown"
+        @click="closeProjectEditorFromOverlay"
+      >
         <section class="flex h-full w-full max-w-2xl flex-col bg-white shadow-2xl dark:bg-slate-900">
           <header class="flex items-center justify-between border-b border-slate-200 px-5 py-4 dark:border-slate-800">
             <div>
@@ -717,7 +774,12 @@ async function confirmDelete(): Promise<void> {
     </Teleport>
 
     <Teleport to="body">
-      <div v-if="pageEditorOpen" class="fixed inset-0 z-[85] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-[1px]" @click.self="pageEditorOpen = false">
+      <div
+        v-if="pageEditorOpen"
+        class="fixed inset-0 z-[85] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-[1px]"
+        @mousedown="handlePageOverlayMousedown"
+        @click="closePageEditorFromOverlay"
+      >
         <section class="w-full max-w-lg rounded-2xl bg-white shadow-2xl dark:bg-slate-900">
           <header class="flex items-center justify-between border-b border-slate-200 px-5 py-4 dark:border-slate-800">
             <div><p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Page Path</p><h3 class="mt-0.5 text-base font-semibold text-slate-800 dark:text-slate-100">{{ editingPageId ? '编辑页面' : '添加页面' }}</h3></div>

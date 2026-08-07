@@ -69,20 +69,28 @@ jobs:
         run: |
           asset_path=".output/work-devtools-${PACKAGE_VERSION}-chrome.zip"
           release_title="Work DevTools v${PACKAGE_VERSION}"
+          public_release_notes="${RUNNER_TEMP}/work-devtools-${PACKAGE_VERSION}-release-notes.md"
 
           if [ ! -f "$asset_path" ]; then
             echo "未找到打包产物：$asset_path" >&2
             exit 1
           fi
 
+          # 验证记录保留在仓库文档中，但不作为面向用户的 GitHub Release 描述。
+          awk '
+            /^## 验证结果[[:space:]]*$/ { hidden = 1; next }
+            hidden && /^## / { hidden = 0 }
+            !hidden { print }
+          ' "$RELEASE_NOTES" > "$public_release_notes"
+
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
             gh release edit "$GITHUB_REF_NAME" \
               --title "$release_title" \
-              --notes-file "$RELEASE_NOTES"
+              --notes-file "$public_release_notes"
             gh release upload "$GITHUB_REF_NAME" "$asset_path" --clobber
           else
             gh release create "$GITHUB_REF_NAME" "$asset_path" \
               --verify-tag \
               --title "$release_title" \
-              --notes-file "$RELEASE_NOTES"
+              --notes-file "$public_release_notes"
           fi
