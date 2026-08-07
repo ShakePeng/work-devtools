@@ -1,0 +1,71 @@
+README.md
+  s_6f43039c13ef57::t_8a079619499177 172
+  s_6f43039c13ef57::t_8c545c48618a4d 116
+  s_6f43039c13ef57::t_1fbfce0e91ac67 173-174
+  s_6f43039c13ef57::t_c0ad0a7f38fa5e 5,119-121,133
+  s_6f43039c13ef57::t_58c7a80ba9ef32 16,28
+src/manager/components/CookieInjectorJsonEditorDialog.vue
+  s_6f43039c13ef57::t_c0f1853cf24a20 1-46
+tests/work-devtools-branding.test.mjs
+  s_6f43039c13ef57::t_285c6c9063e17c 5,19-20,84-89,93-99,111-121
+  s_6f43039c13ef57::t_b7a05375605141 122-123
+  s_6f43039c13ef57::t_58c7a80ba9ef32 90-92,107
+  s_6f43039c13ef57::t_37e2a3cd26b806 81-82
+  s_6f43039c13ef57::t_135edbf1ffe371 18,73-80,83,100-106,108-110
+  s_6f43039c13ef57::t_f6898446484a40 147,150-161,163
+docs/releases/README.md
+  s_6f43039c13ef57::t_8c545c48618a4d 11,21
+.github/workflows/release.yml
+  s_6f43039c13ef57::t_8c545c48618a4d 72,79-85,89,95
+tests/release-workflow.test.mjs
+  s_6f43039c13ef57::t_8c545c48618a4d 22,28-32
+src/manager/components/UnifiedTreeManager.vue
+  s_6f43039c13ef57::t_85176db3144692 33,35,77
+  s_6f43039c13ef57::t_7a877af7d4ee89 776-816,820
+  s_6f43039c13ef57::t_6272b30e28ebbd 839,874-876,884,921-928
+src/manager/components/DevAddressJsonEditorDialog.vue
+  s_6f43039c13ef57::t_c0f1853cf24a20 4,16-17,20-24,29-41
+  s_6f43039c13ef57::t_07be9d428710bc 1-3,5-15,18-19,25-28,42
+package.json
+  s_6f43039c13ef57::t_c0ad0a7f38fa5e 4
+  s_6f43039c13ef57::t_87d7415a6653f2 18-20,22
+  s_6f43039c13ef57::t_9d0db24eb2686a 21
+src/manager/components/DevAddressManager.vue
+  s_6f43039c13ef57::t_d1a6230e4a0211 17,79,132-136
+  s_6f43039c13ef57::t_a9ccd5533cb99a 20,80,88,94,98,104,137-138,505,512-518
+  s_6f43039c13ef57::t_777fe55eb32c0a 506-511,718-724
+  s_6f43039c13ef57::t_4e078f4d3d3e0b 81-83,85-87
+  s_6f43039c13ef57::t_d469673dbbbf7b 89-93
+  s_6f43039c13ef57::t_00817296e39081 95-97
+  s_6f43039c13ef57::t_bb03c4d56afbcb 99-103
+  s_6f43039c13ef57::t_ef616a7faa7dc7 105
+  s_6f43039c13ef57::t_05166365ccd573 725
+  s_6f43039c13ef57::t_f16f38b41d0c58 84,727-732,777-782
+docs/releases/1.0.2.md
+  s_6f43039c13ef57::t_56e18d3414c030 5,9,11,16-18,30
+  s_6f43039c13ef57::t_58c7a80ba9ef32 10
+  s_6f43039c13ef57::t_8c545c48618a4d 20
+  s_6f43039c13ef57::t_0ff0b0d5e28dfa 34-36
+  s_6f43039c13ef57::t_c0ad0a7f38fa5e 1-4,6-8,12-15,19,21-29,31-33,37-43
+src/manager/components/JsonEditorDialog.vue
+  s_6f43039c13ef57::t_c0f1853cf24a20 1-172,174-178,180-183,185-194,196,200-224,227-325
+  s_6f43039c13ef57::t_58c7a80ba9ef32 173,179,184,195,197-199,225-226
+yarn.lock
+  s_6f43039c13ef57::t_d14719f71d2b1d 67-151,507-539,1213-1225,1308-1312,3194-3198,3470-3474
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "b64f217a9d27e8e633bc513003c1d16b5296b676",
+  "prompts": {},
+  "sessions": {
+    "s_6f43039c13ef57": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fd664-c3ae-7d31-b2fb-7c57ea9b3a28",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "彭振东 <pzd6391@ly.com>"
+    }
+  }
+}
