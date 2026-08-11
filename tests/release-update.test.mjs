@@ -102,11 +102,15 @@ test('仅解析最新正式 GitHub Release', () => {
   }), null)
 })
 
-test('24 小时内复用缓存且不发起 GitHub 请求', async () => {
+test('INTERVAL=0 表示每次打开都发请求，缓存仅用于初始展示与携带 ETag', () => {
+  assert.equal(RELEASE_CHECK_INTERVAL_MS, 0)
+})
+
+test('缓存新鲜时跳过请求直接返回缓存状态（仅用于未来时间戳的边界场景）', async () => {
   const now = 1_760_000_000_000
   const storage = createStorage({
     [STORAGE_KEY]: {
-      checkedAt: now - RELEASE_CHECK_INTERVAL_MS + 1,
+      checkedAt: now + 1, // 未来时间 → 新鲜
       latestVersion: '1.0.2',
       releaseUrl: RELEASE_URL,
     },
@@ -129,11 +133,12 @@ test('24 小时内复用缓存且不发起 GitHub 请求', async () => {
   assert.equal(status.latestVersion, '1.0.2')
 })
 
-test('过期缓存请求最新 Release 并更新独立缓存', async () => {
+test('打开管理页即发请求并更新缓存（INTERVAL=0 下应当总是请求）', async () => {
   const now = 1_760_000_000_000
+  const initialCheckedAt = now - 1000
   const storage = createStorage({
     [STORAGE_KEY]: {
-      checkedAt: now - RELEASE_CHECK_INTERVAL_MS,
+      checkedAt: initialCheckedAt,
       latestVersion: '1.0.1',
       releaseUrl: 'https://github.com/ShakePeng/work-devtools/releases/tag/v1.0.1',
     },
@@ -156,25 +161,97 @@ test('过期缓存请求最新 Release 并更新独立缓存', async () => {
           draft: false,
           prerelease: false,
         }),
+        headers: new Headers({ etag: 'W/"abc123"' }),
       }
     },
   })
 
   assert.equal(requestUrl, LATEST_RELEASE_API_URL)
   assert.equal(status.hasUpdate, true)
+  assert.equal(status.latestVersion, '1.0.2')
   assert.equal(storage.values[STORAGE_KEY].checkedAt, now)
   assert.equal(storage.values[STORAGE_KEY].latestVersion, '1.0.2')
+  assert.equal(storage.values[STORAGE_KEY].etag, 'W/"abc123"')
 })
 
-test('离线和限流时静默保留旧更新提示并延后下一次检查', async () => {
+test('缓存携带 ETag 时下次请求带 If-None-Match header', async () => {
   const now = 1_760_000_000_000
+  const storage = createStorage({
+    [STORAGE_KEY]: {
+      checkedAt: now - 1000,
+      latestVersion: '1.0.2',
+      releaseUrl: RELEASE_URL,
+      etag: 'W/"prev-etag"',
+    },
+  })
+  let receivedHeaders = null
+
+  await checkReleaseUpdate({
+    storage,
+    storageKey: STORAGE_KEY,
+    currentVersion: '1.0.1',
+    now,
+    request: async (url, init) => {
+      receivedHeaders = init.headers
+      return {
+        ok: true,
+        status: 304,
+        json: async () => ({}),
+        headers: new Headers(),
+      }
+    },
+  })
+
+  assert.ok(receivedHeaders)
+  assert.equal(receivedHeaders['If-None-Match'], 'W/"prev-etag"')
+})
+
+test('GitHub 304 时保留旧版本提示，仅更新 checkedAt 与 etag（不计入限流配额）', async () => {
+  const now = 1_760_000_000_000
+  const initialCheckedAt = now - 1000
+  const storage = createStorage({
+    [STORAGE_KEY]: {
+      checkedAt: initialCheckedAt,
+      latestVersion: '1.0.2',
+      releaseUrl: RELEASE_URL,
+      etag: 'W/"old"',
+    },
+  })
+  let jsonCalled = false
+
+  const status = await checkReleaseUpdate({
+    storage,
+    storageKey: STORAGE_KEY,
+    currentVersion: '1.0.1',
+    now,
+    request: async () => ({
+      ok: true,
+      status: 304,
+      json: async () => { jsonCalled = true; return {} },
+      headers: new Headers({ etag: 'W/"new"' }),
+    }),
+  })
+
+  // 304 不应调用 json()（响应没有 body）
+  assert.equal(jsonCalled, false)
+  assert.equal(status.hasUpdate, true)
+  assert.equal(status.latestVersion, '1.0.2')
+  assert.equal(status.releaseUrl, RELEASE_URL)
+  assert.equal(storage.values[STORAGE_KEY].checkedAt, now)
+  assert.equal(storage.values[STORAGE_KEY].latestVersion, '1.0.2')
+  assert.equal(storage.values[STORAGE_KEY].etag, 'W/"new"')
+})
+
+test('请求失败时不更新 checkedAt，下次打开可立即重试', async () => {
+  const now = 1_760_000_000_000
+  const initialCheckedAt = now - 1000
   for (const request of [
     async () => { throw new Error('offline') },
-    async () => ({ ok: false, status: 403, json: async () => ({}) }),
+    async () => ({ ok: false, status: 403, json: async () => ({}), headers: new Headers() }),
   ]) {
     const storage = createStorage({
       [STORAGE_KEY]: {
-        checkedAt: now - RELEASE_CHECK_INTERVAL_MS,
+        checkedAt: initialCheckedAt,
         latestVersion: '1.0.2',
         releaseUrl: RELEASE_URL,
       },
@@ -190,7 +267,9 @@ test('离线和限流时静默保留旧更新提示并延后下一次检查', as
 
     assert.equal(status.hasUpdate, true)
     assert.equal(status.latestVersion, '1.0.2')
-    assert.equal(storage.values[STORAGE_KEY].checkedAt, now)
+    // 失败路径保留旧 checkedAt，不写 now
+    assert.equal(storage.values[STORAGE_KEY].checkedAt, initialCheckedAt)
+    assert.equal(storage.values[STORAGE_KEY].latestVersion, '1.0.2')
   }
 })
 

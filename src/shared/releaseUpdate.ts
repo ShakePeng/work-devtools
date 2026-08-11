@@ -1,4 +1,4 @@
-export const RELEASE_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000
+export const RELEASE_CHECK_INTERVAL_MS = 0
 export const RELEASES_PAGE_URL = 'https://github.com/ShakePeng/work-devtools/releases'
 export const LATEST_RELEASE_API_URL = 'https://api.github.com/repos/ShakePeng/work-devtools/releases/latest'
 
@@ -6,6 +6,7 @@ export interface ReleaseCheckCache {
   checkedAt: number
   latestVersion: string | null
   releaseUrl: string | null
+  etag?: string | null
 }
 
 export interface ReleaseUpdateStatus {
@@ -23,7 +24,9 @@ export interface ReleaseCheckStorage {
 export type ReleaseRequest = (
   url: string,
   init: RequestInit
-) => Promise<Pick<Response, 'ok' | 'status' | 'json'>>
+) => Promise<Pick<Response, 'ok' | 'status' | 'json'> & {
+  headers?: { get(name: string): string | null }
+}>
 
 interface GitHubLatestRelease {
   version: string
@@ -100,13 +103,16 @@ export function normalizeReleaseCheckCache(value: unknown): ReleaseCheckCache | 
   }
 
   const latestVersion = normalizeReleaseVersion(cache.latestVersion)
-  return {
+  const etag = typeof cache.etag == 'string' && cache.etag ? cache.etag : null
+  const result: ReleaseCheckCache = {
     checkedAt: cache.checkedAt,
     latestVersion,
     releaseUrl: latestVersion
       ? normalizeReleaseUrl(cache.releaseUrl) || getReleaseUrlForVersion(latestVersion)
       : null,
   }
+  if (etag) result.etag = etag
+  return result
 }
 
 export function isReleaseCheckFresh(cache: ReleaseCheckCache | null, now = Date.now()): boolean {
@@ -166,8 +172,10 @@ async function writeReleaseCheckCache(
 }
 
 /**
- * 读取 GitHub 最新正式 Release，并通过独立本机缓存限制为每 24 小时至多请求一次。
- * 请求异常时保留旧缓存的更新提示，界面无需因网络问题展示错误。
+ * 读取 GitHub 最新正式 Release。
+ * 每次调用都向 GitHub 发请求；通过 ETag/If-None-Match 让 GitHub 返回 304，不消耗限流配额。
+ * 请求失败时不更新缓存 checkedAt，下次打开管理页可立即重试。
+ * 304 响应保留缓存的 latestVersion/releaseUrl，仅更新 checkedAt 与 etag（若有变化）。
  */
 export async function checkReleaseUpdate(options: {
   storage: ReleaseCheckStorage
@@ -180,35 +188,49 @@ export async function checkReleaseUpdate(options: {
     ? options.now
     : Date.now()
   const cached = await readReleaseCheckCache(options.storage, options.storageKey)
+  // 始终发起请求；缓存只用于打开瞬间的初始展示和携带 ETag。
   if (isReleaseCheckFresh(cached, now)) {
     return getReleaseUpdateStatus(cached, options.currentVersion)
   }
 
+  const request = options.request || fetch
+  const headers: Record<string, string> = { Accept: 'application/vnd.github+json' }
+  if (cached?.etag) headers['If-None-Match'] = cached.etag
+
   try {
-    const request = options.request || fetch
-    const response = await request(LATEST_RELEASE_API_URL, {
-      headers: { Accept: 'application/vnd.github+json' },
-    })
+    const response = await request(LATEST_RELEASE_API_URL, { headers })
+
+    // 304：GitHub 表示资源未变，不消耗限流配额；保留最新版本信息，仅更新 checkedAt。
+    // 304 响应通常仍会带 ETag header（与请求时的 If-None-Match 一致），同步更新缓存 etag。
+    if (response.status == 304) {
+      const etag304 = response.headers?.get('etag') || response.headers?.get('ETag') || cached?.etag || null
+      const nextCache: ReleaseCheckCache = {
+        checkedAt: now,
+        latestVersion: cached?.latestVersion || null,
+        releaseUrl: cached?.releaseUrl || null,
+        ...(etag304 ? { etag: etag304 } : {}),
+      }
+      await writeReleaseCheckCache(options.storage, options.storageKey, nextCache)
+      return getReleaseUpdateStatus(nextCache, options.currentVersion)
+    }
+
     if (!response.ok) throw new Error(`GitHub Release 请求失败（${response.status}）`)
 
     const latestRelease = parseGitHubLatestRelease(await response.json())
     if (!latestRelease) throw new Error('GitHub Release 响应不是正式版本')
 
+    const etag = response.headers?.get('etag') || response.headers?.get('ETag') || null
     const nextCache: ReleaseCheckCache = {
       checkedAt: now,
       latestVersion: latestRelease.version,
       releaseUrl: latestRelease.releaseUrl,
+      ...(etag ? { etag } : {}),
     }
     await writeReleaseCheckCache(options.storage, options.storageKey, nextCache)
     return getReleaseUpdateStatus(nextCache, options.currentVersion)
   } catch (error) {
     console.warn('[ReleaseUpdate] 检查最新版本失败:', error)
-    const nextCache: ReleaseCheckCache = {
-      checkedAt: now,
-      latestVersion: cached?.latestVersion || null,
-      releaseUrl: cached?.releaseUrl || null,
-    }
-    await writeReleaseCheckCache(options.storage, options.storageKey, nextCache)
+    // 网络失败/限流：不更新 checkedAt，nextCache 保留旧时间戳，下次打开可立即重试。
     return getReleaseUpdateStatus(cached, options.currentVersion)
   }
 }
