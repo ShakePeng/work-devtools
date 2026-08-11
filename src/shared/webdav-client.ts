@@ -85,6 +85,7 @@ function resolveRemoteWorkDevToolsData(value: unknown): WorkDevToolsData | null 
       ...tools,
       cookieInjector: cookieInjector as WorkDevToolsData['tools']['cookieInjector'],
       devAddresses: (tools.devAddresses || { projects: [] }) as WorkDevToolsData['tools']['devAddresses'],
+      imageCompressor: (tools.imageCompressor || { settings: { defaultEngine: 'local', local: { pngOptimizeLevel: 3, jpegQuality: 80, webpQuality: 80, maxEdge: 0 } } }) as WorkDevToolsData['tools']['imageCompressor'],
     },
   }
 }

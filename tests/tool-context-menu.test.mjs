@@ -48,3 +48,12 @@ test('项目详情平铺展示环境并通过单选框切换默认环境', () =>
   assert.match(devManagerSource, /@change="changeDefaultEnvironment\(environment\.id\)"/)
   assert.doesNotMatch(devManagerSource, /<select[\s\S]*@change="changeDefaultEnvironment"/)
 })
+
+test('常用页面支持可选 Wiki 输入并提供新标签页打开入口', () => {
+  assert.match(devManagerSource, /Wiki 地址（可选）/)
+  assert.match(devManagerSource, /v-model="pageWikiUrl"/)
+  assert.match(devManagerSource, /const wikiUrl = normalizeDevWikiUrl\(pageWikiUrl\.value\)/)
+  assert.match(devManagerSource, /if \(wikiUrl\) page\.wikiUrl = wikiUrl/)
+  assert.match(devManagerSource, /async function openPageWiki\(page: DevPage\)[\s\S]*chrome\.tabs\.create\(\{ url: page\.wikiUrl \}\)/)
+  assert.match(devManagerSource, /v-if="page\.wikiUrl"[\s\S]*@click="openPageWiki\(page\)"[\s\S]*>Wiki</)
+})

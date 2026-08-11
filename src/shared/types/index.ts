@@ -144,6 +144,8 @@ export interface DevPage {
   id: string
   name: string
   path: string
+  /** 可选页面级 Wiki 地址，用于快速跳转对应文档。 */
+  wikiUrl?: string
 }
 
 /** 常用开发地址中的一个项目。 */
@@ -162,6 +164,40 @@ export interface DevAddressesData {
   projects: DevAddressProject[]
 }
 
+// ============ 图片压缩 ============
+
+/** 图片压缩引擎。 */
+export type ImageCompressorEngine = 'local' | 'tinify'
+
+/** 本地 WASM 压缩参数。 */
+export interface ImageCompressorLocalOptions {
+  /** PNG 无损优化级别 1-6，级别越高压缩率越好但越慢；0 表示不优化。 */
+  pngOptimizeLevel: number
+  /** JPEG 质量 0-100。 */
+  jpegQuality: number
+  /** WebP 质量 0-100。 */
+  webpQuality: number
+  /** 最长边像素限制，0 表示不限制。 */
+  maxEdge: number
+}
+
+/** 图片压缩工具设置。 */
+export interface ImageCompressorSettings {
+  /** 默认引擎；选择 'tinify' 但未配置 Key 时会回退到 'local'。 */
+  defaultEngine: ImageCompressorEngine
+  /** 本地引擎参数。 */
+  local: ImageCompressorLocalOptions
+  /** TinyPNG API Key 列表，可配置多把 Key 分担 500 次/月配额。 */
+  tinifyApiKeys?: string[]
+  /** 每把 Key 最近一次的月度已用次数，与 tinifyApiKeys 按索引对应。 */
+  tinifyKeyUsage?: number[]
+}
+
+/** 图片压缩工具数据，会随导入导出和 WebDAV 同步。 */
+export interface ImageCompressorData {
+  settings: ImageCompressorSettings
+}
+
 /** Work DevTools 持久化、导入导出和 WebDAV 共用的根数据结构。 */
 export interface WorkDevToolsData {
   version: number
@@ -170,11 +206,12 @@ export interface WorkDevToolsData {
   tools: {
     cookieInjector: CookieData
     devAddresses: DevAddressesData
+    imageCompressor: ImageCompressorData
     [toolKey: string]: unknown
   }
 }
 
-export const CURRENT_VERSION = 2
+export const CURRENT_VERSION = 3
 export const LEGACY_COOKIE_DATA_VERSION = 7
 
 // ============ 存储分块元数据 ============

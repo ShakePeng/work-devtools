@@ -29,6 +29,23 @@ const DEFAULT_CONFIG: WebDavSyncConfig = {
   enabled: false,
 }
 
+function stripSensitive(source: WorkDevToolsData): WorkDevToolsData {
+  const cloned = JSON.parse(JSON.stringify(source)) as WorkDevToolsData
+  if (cloned.tools.imageCompressor?.settings) {
+    delete (cloned.tools.imageCompressor.settings as unknown as Record<string, unknown>).tinifyApiKeys
+  }
+  return cloned
+}
+
+async function isSensitiveExportEnabled(): Promise<boolean> {
+  try {
+    const result = await chrome.storage.local.get(STORAGE_KEYS.sensitiveExportEnabled)
+    return result[STORAGE_KEYS.sensitiveExportEnabled] == true
+  } catch {
+    return false
+  }
+}
+
 export function useWebDavSync(
   data: Ref<WorkDevToolsData>,
   saveDataImmediate: (
@@ -211,7 +228,11 @@ export function useWebDavSync(
         ...data.value,
         updatedAt: localUpdatedAt,
       }
-      await writeWebDavFile(config.value, nextData, remote)
+      let payload = nextData
+      if (!(await isSensitiveExportEnabled())) {
+        payload = stripSensitive(nextData)
+      }
+      await writeWebDavFile(config.value, payload, remote)
       remoteFileExists.value = true
       status.value.lastSyncAt = Date.now()
       status.value.remoteUpdatedAt = localUpdatedAt

@@ -2,6 +2,7 @@ import {
   CURRENT_VERSION,
   type CookieData,
   type DevAddressesData,
+  type ImageCompressorData,
   type WorkDevToolsData,
 } from './types'
 import {
@@ -9,6 +10,11 @@ import {
   isDevAddressesData,
   normalizeDevAddressesData,
 } from './devAddresses'
+import {
+  createDefaultImageCompressorData,
+  isImageCompressorData,
+  normalizeImageCompressorData,
+} from './imageCompressor'
 
 function hasCookieDataShape(value: unknown): value is CookieData {
   if (!value || typeof value != 'object') return false
@@ -50,9 +56,10 @@ function hasCompatibleWorkDevToolsShape(value: unknown): boolean {
   const tools = data.tools as Record<string, unknown>
   return hasCookieDataShape(tools.cookieInjector)
     && (typeof tools.devAddresses == 'undefined' || isDevAddressesData(tools.devAddresses))
+    && (typeof tools.imageCompressor == 'undefined' || isImageCompressorData(tools.imageCompressor))
 }
 
-/** 当前完整结构；旧版缺少 devAddresses 时由 resolveWorkDevToolsData 补全。 */
+/** 当前完整结构；旧版缺少 devAddresses / imageCompressor 时由 resolveWorkDevToolsData 补全。 */
 export function isWorkDevToolsData(value: unknown): value is WorkDevToolsData {
   if (!hasCompatibleWorkDevToolsShape(value)) return false
   const tools = (value as { tools: Record<string, unknown> }).tools
@@ -73,12 +80,13 @@ export function isLegacyCookieData(value: unknown): value is CookieData & {
 export function createWorkDevToolsData(
   cookieInjector: CookieData,
   updatedAt = 0,
-  devAddresses: DevAddressesData = createDefaultDevAddressesData()
+  devAddresses: DevAddressesData = createDefaultDevAddressesData(),
+  imageCompressor: ImageCompressorData = createDefaultImageCompressorData()
 ): WorkDevToolsData {
   return {
     version: CURRENT_VERSION,
     updatedAt,
-    tools: { cookieInjector, devAddresses },
+    tools: { cookieInjector, devAddresses, imageCompressor },
   }
 }
 
@@ -99,6 +107,7 @@ export function resolveWorkDevToolsData(
         ...data.tools,
         cookieInjector: data.tools.cookieInjector,
         devAddresses: normalizeDevAddressesData(data.tools.devAddresses),
+        imageCompressor: normalizeImageCompressorData(data.tools.imageCompressor),
       },
     }
   }

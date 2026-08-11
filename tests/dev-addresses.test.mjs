@@ -69,6 +69,28 @@ test('页面 path 自动补斜杠并保留查询参数和锚点', () => {
   assert.throws(() => normalizeDevPagePath('https://other.example.com/page'), /相对路径/)
 })
 
+test('页面 wikiUrl 可选，填写时规范化为完整 HTTP/HTTPS 地址', () => {
+  const normalized = normalizeDevAddressesData({
+    projects: [createProject({
+      pages: [
+        { id: 'page-list', name: '列表页', path: '/list', wikiUrl: 'https://wiki.example.com/list' },
+      ],
+    })],
+  })
+  assert.equal(normalized.projects[0].pages[0].wikiUrl, 'https://wiki.example.com/list')
+
+  const withoutWiki = normalizeDevAddressesData({ projects: [createProject()] })
+  assert.equal(withoutWiki.projects[0].pages[0].wikiUrl, undefined)
+
+  assert.throws(() => normalizeDevAddressesData({
+    projects: [createProject({
+      pages: [
+        { id: 'page-list', name: '列表页', path: '/list', wikiUrl: 'ftp://wiki.example.com' },
+      ],
+    })],
+  }), /Wiki 地址只支持 HTTP 或 HTTPS/)
+})
+
 test('旧工作台缺少常用开发地址时补为空数据', () => {
   assert.deepEqual(normalizeDevAddressesData(undefined), { projects: [] })
   assert.throws(() => normalizeDevAddressesData(null), /必须是对象/)

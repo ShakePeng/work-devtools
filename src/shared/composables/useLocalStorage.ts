@@ -1,5 +1,5 @@
 import { ref, shallowRef, type Ref, onUnmounted } from 'vue'
-import type { ChunkMeta, CookieData, DevAddressesData, WorkDevToolsData } from '@shared/types'
+import type { ChunkMeta, CookieData, DevAddressesData, ImageCompressorData, WorkDevToolsData } from '@shared/types'
 import { CURRENT_VERSION, LEGACY_COOKIE_DATA_VERSION } from '@shared/types'
 import { normalizeDeviceProfiles } from '@shared/deviceProfiles'
 import {
@@ -14,6 +14,7 @@ import {
 } from '@shared/cookieProfiles'
 import { STORAGE_KEYS } from '@shared/storageKeys'
 import { normalizeDevAddressesData } from '@shared/devAddresses'
+import { normalizeImageCompressorData } from '@shared/imageCompressor'
 import {
   createWorkDevToolsData,
   isLegacyCookieData,
@@ -157,6 +158,7 @@ function normalizeWorkspaceData(
       ...value.tools,
       cookieInjector: normalizeCookieData(value.tools.cookieInjector),
       devAddresses: normalizeDevAddressesData(value.tools.devAddresses),
+      imageCompressor: normalizeImageCompressorData(value.tools.imageCompressor),
     },
   }
 }
@@ -172,6 +174,7 @@ export function useLocalStorage() {
   const defaultWorkspace = createWorkDevToolsData(defaultData)
   const data: Ref<CookieData> = shallowRef(defaultData)
   const devAddresses: Ref<DevAddressesData> = shallowRef(defaultWorkspace.tools.devAddresses)
+  const imageCompressor: Ref<ImageCompressorData> = shallowRef(defaultWorkspace.tools.imageCompressor)
   const workspaceData: Ref<WorkDevToolsData> = shallowRef(defaultWorkspace)
 
   let writeTimer: ReturnType<typeof setTimeout> | null = null
@@ -265,6 +268,7 @@ export function useLocalStorage() {
       workspaceData.value = normalized
       data.value = normalized.tools.cookieInjector
       devAddresses.value = normalized.tools.devAddresses
+      imageCompressor.value = normalized.tools.imageCompressor
       return data.value
     } catch (e) {
       error.value = `加载数据失败: ${(e as Error).message}`
@@ -279,6 +283,7 @@ export function useLocalStorage() {
     workspaceData.value = nextData
     data.value = nextData.tools.cookieInjector
     devAddresses.value = nextData.tools.devAddresses
+    imageCompressor.value = nextData.tools.imageCompressor
     try {
       _writing = true
       await writeLocalData(nextData)
@@ -357,6 +362,17 @@ export function useLocalStorage() {
     })
   }
 
+  /** 立即写入图片压缩设置数据。 */
+  async function saveImageCompressorImmediate(newData: ImageCompressorData): Promise<void> {
+    await saveWorkspaceDataImmediate({
+      ...workspaceData.value,
+      tools: {
+        ...workspaceData.value.tools,
+        imageCompressor: newData,
+      },
+    })
+  }
+
   /** 清空完整工作台数据，同时阻止旧数据在下次加载时被重新迁回。 */
   async function clearAll(): Promise<void> {
     try {
@@ -377,11 +393,13 @@ export function useLocalStorage() {
     workspaceData.value = emptyWorkspace
     data.value = emptyWorkspace.tools.cookieInjector
     devAddresses.value = emptyWorkspace.tools.devAddresses
+    imageCompressor.value = emptyWorkspace.tools.imageCompressor
   }
 
   return {
     data,
     devAddresses,
+    imageCompressor,
     workspaceData,
     loading,
     error,
@@ -389,6 +407,7 @@ export function useLocalStorage() {
     saveData,
     saveDataImmediate,
     saveDevAddressesImmediate,
+    saveImageCompressorImmediate,
     saveWorkspaceDataImmediate,
     clearAll,
     startWatchExternal,

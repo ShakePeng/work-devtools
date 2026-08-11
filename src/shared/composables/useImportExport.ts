@@ -24,8 +24,30 @@ import {
   mergeDevAddressesData,
   regenerateDevAddressIds,
 } from '@shared/devAddresses'
+import {
+  createDefaultImageCompressorData,
+  normalizeImageCompressorData,
+} from '@shared/imageCompressor'
+import { STORAGE_KEYS } from '@shared/storageKeys'
 import { nanoid } from 'nanoid'
 import { resolveWorkDevToolsData } from '@shared/workspaceData'
+
+function stripSensitive(source: WorkDevToolsData): WorkDevToolsData {
+  const cloned = JSON.parse(JSON.stringify(source)) as WorkDevToolsData
+  if (cloned.tools.imageCompressor?.settings) {
+    delete (cloned.tools.imageCompressor.settings as unknown as Record<string, unknown>).tinifyApiKeys
+  }
+  return cloned
+}
+
+async function isSensitiveExportEnabled(): Promise<boolean> {
+  try {
+    const result = await chrome.storage.local.get(STORAGE_KEYS.sensitiveExportEnabled)
+    return result[STORAGE_KEYS.sensitiveExportEnabled] == true
+  } catch {
+    return false
+  }
+}
 
 export function useImportExport(data: { value: WorkDevToolsData }) {
   const importPreview = ref<ImportPreview | null>(null)
@@ -148,6 +170,7 @@ export function useImportExport(data: { value: WorkDevToolsData }) {
           cookiePresets,
         },
         devAddresses: regenerateDevAddressIds(importData.tools.devAddresses, nanoid),
+        imageCompressor: normalizeImageCompressorData(importData.tools.imageCompressor),
       },
     }
   }
@@ -202,6 +225,7 @@ export function useImportExport(data: { value: WorkDevToolsData }) {
           cookiePresets,
         },
         devAddresses,
+        imageCompressor: normalizeImageCompressorData(importData.tools.imageCompressor),
       },
     }
   }
@@ -257,14 +281,16 @@ export function useImportExport(data: { value: WorkDevToolsData }) {
     return [...presets.values()]
   }
 
-  /** 导出为 JSON 字符串 */
-  function exportJson(): string {
-    return JSON.stringify(data.value, null, 2)
+  /** 导出为 JSON 字符串；includeSensitive 为 false 时剥离 TinyPNG API Key。 */
+  function exportJson(opts?: { includeSensitive?: boolean }): string {
+    const source = opts?.includeSensitive ? data.value : stripSensitive(data.value)
+    return JSON.stringify(source, null, 2)
   }
 
-  /** 触发 JSON 文件下载 */
-  function downloadJson(): void {
-    const json = exportJson()
+  /** 触发 JSON 文件下载；按本机敏感信息开关决定是否携带 API Key。 */
+  async function downloadJson(opts?: { includeSensitive?: boolean }): Promise<void> {
+    const includeSensitive = opts?.includeSensitive ?? await isSensitiveExportEnabled()
+    const json = exportJson({ includeSensitive })
     const blob = new Blob([json], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')

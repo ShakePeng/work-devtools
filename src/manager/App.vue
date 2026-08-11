@@ -15,7 +15,7 @@ import {
   parseManagerNav,
 } from '@shared/managerNavigation'
 import { RELEASES_PAGE_URL } from '@shared/releaseUpdate'
-import { FolderTree, Database, DatabaseBackup, Smartphone, Code2, Cookie, Link2, ExternalLink } from 'lucide-vue-next'
+import { FolderTree, Database, DatabaseBackup, Smartphone, Code2, Cookie, Link2, ExternalLink, ImagePlus, Settings2, FileCode2, Copy, X } from 'lucide-vue-next'
 import UnifiedTreeManager from './components/UnifiedTreeManager.vue'
 import BackupSyncPanel from './components/BackupSyncPanel.vue'
 import Toast from './components/Toast.vue'
@@ -23,8 +23,10 @@ import DeviceProfilePanel from './components/DeviceProfilePanel.vue'
 import BridgeProfilePanel from './components/BridgeProfilePanel.vue'
 import CookieProfilePanel from './components/CookieProfilePanel.vue'
 import DevAddressManager from './components/DevAddressManager.vue'
+import ImageCompressorCompose from './components/ImageCompressorCompose.vue'
+import ImageCompressorSettings from './components/ImageCompressorSettings.vue'
 
-type ToolKey = 'cookie-injector' | 'dev-addresses'
+type ToolKey = 'cookie-injector' | 'dev-addresses' | 'image-compressor'
 
 interface NavItem {
   key: ManagerNavKey
@@ -46,6 +48,7 @@ const activeNav = ref<ManagerNavKey>(parseManagerNav(window.location.search))
 const {
   data,
   devAddresses,
+  imageCompressor,
   workspaceData,
   loading,
   error,
@@ -53,6 +56,7 @@ const {
   saveData,
   saveDataImmediate,
   saveDevAddressesImmediate,
+  saveImageCompressorImmediate,
   saveWorkspaceDataImmediate,
   clearAll,
   startWatchExternal,
@@ -69,6 +73,7 @@ const webDavSync = useWebDavSync(workspaceData, saveWorkspaceDataImmediate)
 const toastMsg = ref('')
 const toastType = ref<'success' | 'error' | 'warning'>('success')
 const toastKey = ref(0)
+const configDialogOpen = ref(false)
 const extensionVersion = chrome.runtime.getManifest().version
 const {
   latestVersion,
@@ -117,6 +122,16 @@ const toolNavGroups: ToolNavGroup[] = [
       { key: 'dev-addresses:projects', label: '地址管理', description: '维护项目环境与常用页面', icon: Link2 },
     ],
   },
+  {
+    key: 'image-compressor',
+    label: '图片压缩',
+    description: '本地 WASM 与 TinyPNG',
+    icon: ImagePlus,
+    children: [
+      { key: 'image-compressor:compress', label: '压缩工具', description: '批量压缩与下载', icon: ImagePlus },
+      { key: 'image-compressor:settings', label: '压缩设置', description: '引擎参数与 TinyPNG Key', icon: Settings2 },
+    ],
+  },
 ]
 
 const workspaceNavItems: NavItem[] = [
@@ -155,6 +170,28 @@ function openReleases(): void {
 
 function openLatestRelease(): void {
   if (releaseUrl.value) openReleasePage(releaseUrl.value)
+}
+
+const workspaceJson = computed(() => JSON.stringify(workspaceData.value, null, 2))
+
+async function copyWorkspaceJson(): Promise<void> {
+  try {
+    try {
+      await navigator.clipboard.writeText(workspaceJson.value)
+    } catch {
+      const textarea = document.createElement('textarea')
+      textarea.value = workspaceJson.value
+      textarea.style.position = 'fixed'
+      textarea.style.left = '-9999px'
+      document.body.appendChild(textarea)
+      textarea.select()
+      document.execCommand('copy')
+      textarea.remove()
+    }
+    showToast('已复制完整配置 JSON', 'success')
+  } catch {
+    showToast('复制失败，请手动选中文本', 'error')
+  }
 }
 
 onMounted(async () => {
@@ -280,6 +317,20 @@ onMounted(async () => {
           </span>
           <ExternalLink :size="13" class="shrink-0 opacity-60" />
         </button>
+
+        <button
+          class="mt-1.5 flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800/70 dark:hover:text-slate-100"
+          title="查看当前完整插件配置"
+          @click="configDialogOpen = true"
+        >
+          <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500">
+            <FileCode2 :size="14" />
+          </span>
+          <span class="min-w-0 flex-1">
+            <span class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300">查看配置</span>
+            <span class="block text-[10px] opacity-60">浏览完整 JSON 数据</span>
+          </span>
+        </button>
       </div>
     </nav>
 
@@ -329,6 +380,20 @@ onMounted(async () => {
             :save-data="saveDevAddressesImmediate"
             @toast="showToast"
           />
+
+          <ImageCompressorCompose
+            v-else-if="activeNav == 'image-compressor:compress'"
+            :settings="imageCompressor.settings"
+            :save-settings="saveImageCompressorImmediate"
+            @toast="showToast"
+          />
+
+          <ImageCompressorSettings
+            v-else-if="activeNav == 'image-compressor:settings'"
+            :data="imageCompressor"
+            :save-data="saveImageCompressorImmediate"
+            @toast="showToast"
+          />
         </div>
       </div>
 
@@ -343,6 +408,41 @@ onMounted(async () => {
         />
       </div>
     </main>
+
+    <Teleport to="body">
+      <div
+        v-if="configDialogOpen"
+        class="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-[1px]"
+        @click.self="configDialogOpen = false"
+      >
+        <section class="flex h-[80vh] w-full max-w-4xl flex-col rounded-2xl bg-white shadow-2xl dark:bg-slate-900">
+          <header class="flex items-center justify-between border-b border-slate-200 px-5 py-4 dark:border-slate-800">
+            <div>
+              <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Work DevTools</p>
+              <h3 class="mt-0.5 text-base font-semibold text-slate-800 dark:text-slate-100">完整配置 JSON</h3>
+            </div>
+            <div class="flex items-center gap-2">
+              <button
+                class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:border-sky-300 hover:text-sky-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+                @click="copyWorkspaceJson"
+              >
+                <Copy :size="13" />复制 JSON
+              </button>
+              <button
+                class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                title="关闭"
+                @click="configDialogOpen = false"
+              >
+                <X :size="17" />
+              </button>
+            </div>
+          </header>
+          <div class="min-h-0 flex-1 overflow-auto">
+            <pre class="h-full p-5 font-mono text-xs leading-6 text-slate-700 dark:text-slate-300">{{ workspaceJson }}</pre>
+          </div>
+        </section>
+      </div>
+    </Teleport>
 
     <Toast :message="toastMsg" :type="toastType" :key="toastKey" />
   </div>

@@ -125,11 +125,17 @@ function normalizeEnvironment(value: unknown, projectName: string, index: number
 
 function normalizePage(value: unknown, projectName: string, index: number): DevPage {
   assertRecord(value, `项目「${projectName}」的第 ${index + 1} 个页面`)
-  return {
+  const page: DevPage = {
     id: requireText(value.id, `项目「${projectName}」的页面 ID`),
     name: requireText(value.name, `项目「${projectName}」的页面名称`),
     path: normalizeDevPagePath(requireText(value.path, `项目「${projectName}」的页面 path`)),
   }
+  if (value.wikiUrl != undefined && typeof value.wikiUrl != 'string') {
+    throw new Error(`项目「${projectName}」的页面 Wiki 地址必须是字符串`)
+  }
+  const wikiUrl = normalizeDevWikiUrl(value.wikiUrl as string | undefined)
+  if (wikiUrl) page.wikiUrl = wikiUrl
+  return page
 }
 
 function normalizeProject(value: unknown, index: number): DevAddressProject {

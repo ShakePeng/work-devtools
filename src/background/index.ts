@@ -22,6 +22,11 @@ const TOOL_CONTEXT_MENU_ITEMS: Array<{
     title: '常用开发地址',
     nav: MANAGER_NAV.devAddressProjects,
   },
+  {
+    id: 'work-devtools:image-compressor',
+    title: '图片压缩',
+    nav: MANAGER_NAV.imageCompressor,
+  },
 ]
 
 const emulatedTabs = new Set<number>()

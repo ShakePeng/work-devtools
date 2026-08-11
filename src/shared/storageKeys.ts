@@ -11,4 +11,6 @@ export const STORAGE_KEYS = {
   system: {
     releaseCheck: 'work_devtools.system.release_check',
   },
+  /** 导出 / 同步时是否携带敏感信息（如 TinyPNG API Key）；默认关闭。 */
+  sensitiveExportEnabled: 'work_devtools.sensitive_export_enabled',
 } as const

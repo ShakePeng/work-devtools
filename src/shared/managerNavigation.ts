@@ -4,6 +4,8 @@ export const MANAGER_NAV = {
   bridgePresets: 'cookie-injector:bridges',
   deviceProfiles: 'cookie-injector:devices',
   devAddressProjects: 'dev-addresses:projects',
+  imageCompressor: 'image-compressor:compress',
+  imageCompressorSettings: 'image-compressor:settings',
   backupSync: 'backup-sync',
 } as const
 

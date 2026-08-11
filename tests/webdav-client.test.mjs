@@ -107,6 +107,12 @@ test('读取并校验远端同步文件', async () => {
     tools: {
       ...payload.tools,
       devAddresses: { projects: [] },
+      imageCompressor: {
+        settings: {
+          defaultEngine: 'local',
+          local: { pngOptimizeLevel: 3, jpegQuality: 80, webpQuality: 80, maxEdge: 0 },
+        },
+      },
     },
   })
   assert.equal(remote?.etag, '"version-1"')

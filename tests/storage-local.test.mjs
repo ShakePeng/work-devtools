@@ -73,7 +73,8 @@ test('持久化数据统一包裹到独立工具命名空间且工具内不写�
   assert.doesNotMatch(cookieTypeSource, /updatedAt:/)
   assert.match(workspaceDataSource, /const \{ version: _version, updatedAt, \.\.\.cookieInjector \} = legacy/)
   assert.match(typesSource, /devAddresses: DevAddressesData/)
-  assert.match(typesSource, /CURRENT_VERSION = 2/)
+  assert.match(typesSource, /imageCompressor: ImageCompressorData/)
+  assert.match(typesSource, /CURRENT_VERSION = 3/)
 })
 
 test('Popup 展开状态迁移到 Cookie Injector 命名空间', () => {
