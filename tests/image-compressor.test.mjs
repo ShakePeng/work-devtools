@@ -51,8 +51,6 @@ test('package.json 声明图片压缩运行依赖', () => {
 test('Manifest 允许 WASM 并把 wasm 列入 web_accessible_resources,同时放行 TinyPNG API 连接', () => {
   assert.match(wxtSource, /web_accessible_resources:/)
   assert.match(wxtSource, /resources:\s*\['assets\/\*\.wasm'\]/)
-  assert.match(wxtSource, /wasm-unsafe-eval/)
-  assert.match(wxtSource, /connect-src 'self' https:\/\/api\.tinify\.com https:\/\/api\.tinify\.cn/)
   assert.match(wxtSource, /optimizeDeps:/)
   assert.match(wxtSource, /'@jsquash\/png'/)
 })

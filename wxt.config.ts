@@ -40,8 +40,5 @@ export default defineConfig({
         matches: ['<all_urls>'],
       },
     ],
-    content_security_policy: {
-      extension_pages: "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; connect-src 'self' https://api.tinify.com https://api.tinify.cn",
-    },
   },
 })
