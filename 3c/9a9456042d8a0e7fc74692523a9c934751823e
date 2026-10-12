@@ -1,0 +1,35 @@
+docs/releases/1.4.0.md
+  s_6ff846a7ead53d::t_d8b55a7e7dbd5e 1-49
+package.json
+  s_6ff846a7ead53d::t_efddf397b2e07f 4
+README.md
+  s_c72468a4bfe527::t_f70a3f66fd53bd 31-38,143
+  s_6ff846a7ead53d::t_c9a31a39d6fa67 5,7,30,53,142
+tests/json-formatter.test.mjs
+  s_c72468a4bfe527::t_28d65b69010a35 1-150,153
+  s_6ff846a7ead53d::t_efddf397b2e07f 151-152
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "3c9a9456042d8a0e7fc74692523a9c934751823e",
+  "prompts": {},
+  "sessions": {
+    "s_6ff846a7ead53d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12f10-fca5-78d0-84b5-ee01c83ba64d",
+        "model": "glm-5.3-flash"
+      },
+      "human_author": "ShakePeng <14865846+ShakePeng@users.noreply.github.com>"
+    },
+    "s_c72468a4bfe527": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12eed-84ae-7c00-b5f0-3169c32553be",
+        "model": "glm-5.3-flash"
+      },
+      "human_author": "ShakePeng <14865846+ShakePeng@users.noreply.github.com>"
+    }
+  }
+}
