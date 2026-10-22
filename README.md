@@ -2,9 +2,9 @@
 
 > 面向开发与测试场景的浏览器工具集
 
-当前版本：`1.0.2` · [查看 v1.0.2 版本说明](docs/releases/1.0.2.md)
+当前版本：`1.0.3` · [查看 v1.0.3 版本说明](docs/releases/1.0.3.md)
 
-Work DevTools 是一个 Chrome 扩展（Manifest V3），用于集中承载常用开发辅助工具。当前内置 **Cookie Injector** 和 **常用开发地址**：前者管理 Cookie 与 Bridge 注入，后者按「项目 → 环境 / 页面」维护可复用的开发地址。全部工具数据均可通过 JSON 或 NAS WebDAV 备份同步。
+Work DevTools 是一个 Chrome 扩展（Manifest V3），用于集中承载常用开发辅助工具。当前内置 **Cookie Injector**、**常用开发地址** 与 **图片压缩**：分别负责 Cookie 与 Bridge 注入、开发地址管理以及图片批量压缩。工具数据均可通过 JSON 或 NAS WebDAV 备份同步。
 
 ## ✨ Cookie Injector 功能
 
@@ -27,7 +27,16 @@ Work DevTools 是一个 Chrome 扩展（Manifest V3），用于集中承载常�
 - **拖拽排序**：拖动项目或页面图标即可调整展示顺序，结果会自动保存并参与备份同步
 - **JSON 弹框编辑**：点击页面右上角「JSON」按钮，在 One Dark 编辑器弹框中批量修改 `tools.devAddresses` 数据并在保存前完成语法和业务校验
 - **Wiki 快捷操作**：支持复制 Wiki 地址或直接在新标签页打开
-- **右键直达工具**：右键扩展图标可直接进入 Cookie Injector 或常用开发地址设置页
+- **右键直达工具**：右键扩展图标可直接进入 Cookie Injector、常用开发地址或图片压缩
+
+## 🖼️ 图片压缩功能
+
+- **批量压缩**：支持拖拽或点击批量添加 PNG / JPEG / WebP 图片，按队列展示文件名、原始大小、压缩后大小与压缩率
+- **本地 WASM 引擎**：基于 `@jsquash/*` 系列 WASM 编解码器，PNG 走 oxipng 无损优化（可调级别 0-6），JPEG 走 MozJPEG、WebP 走 libwebp（均可调质量），其它格式回退 Canvas API，并支持最长边像素限制
+- **TinyPNG 云压缩**：支持配置多把 API Key，遇到配额耗尽或 Key 失效时自动切换下一把，全部不可用时给出可读的聚合错误
+- **多 Key 额度展示**：从 TinyPNG 响应读取剩余配额并按 Key 持久化，压缩时展示每把 Key 的「N/500」用量
+- **单张 / ZIP 下载**：可下载单张压缩结果，也可勾选多项打包为 ZIP 下载
+- **暗色模式**：支持浅色 / 深色主题切换
 
 ## 📦 项目结构
 
@@ -42,6 +51,10 @@ work-devtools/
 │   │   └── main.css
 │   ├── background/
 │   │   └── index.ts            # 后台业务：Cookie、Bridge 与设备配置注入
+│   ├── shared/                  # 跨端业务逻辑、类型、压缩引擎与同步实现
+│   ├── manager/                 # 管理页业务
+│   │   ├── App.vue
+│   │   └── components/          # 管理页 UI 组件（Cookie、开发地址、图片压缩、备份同步等）
 │   ├── entrypoints/             # WXT 扩展入口
 │   │   ├── background.ts        # Service Worker 入口
 │   │   ├── popup/               # 工具栏弹窗入口
@@ -116,20 +129,21 @@ WXT 会在 `.output/` 目录下生成 Chrome 扩展 zip，可直接发给别人�
 仓库通过 GitHub Actions 在推送 `v*` 标签时自动执行测试、打包 Chrome 扩展并创建 GitHub Release。标签版本必须与 `package.json` 中的版本一致，并且必须提前创建 `docs/releases/<version>.md`。工作流会将该文件作为 Release Notes，但会过滤仅供仓库追溯的 `## 验证结果` 小节。
 
 ```bash
-# 示例：package.json 版本已经更新为 1.0.2
-git tag v1.0.2
-git push origin v1.0.2
+# 示例：package.json 版本已经更新为 1.0.3
+git tag v1.0.3
+git push origin v1.0.3
 ```
 
 发布产物名称为 `work-devtools-<version>-chrome.zip`。同一标签重新运行工作流时，会覆盖 Release 中已有的同名 ZIP。
 
 ### 版本检查与手动更新
 
-打开管理页或 Popup 时，扩展会读取 GitHub 最新正式 Release；每台设备最多每 24 小时自动请求一次。当前版本入口始终可打开 Releases 列表，发现新版本时可直接查看对应 Release 并手动下载 ZIP 安装；扩展不会自动下载或安装更新。
+打开管理页或 Popup 时，扩展即读取 GitHub 最新正式 Release，不再限制为每 24 小时一次。请求通过 `ETag / If-None-Match` 与 GitHub 协商：大多数请求返回 304，不计入未认证 60 次/小时的限流配额，只有新 Release 发布后的第一次请求返回 200 才计 1 次。网络失败或被限流时保留上次缓存的更新提示，下次打开可立即重试。发现新版本时可直接查看对应 Release 并手动下载 ZIP 安装；扩展不会自动下载或安装更新。
 
 版本检查缓存保存在独立的 `chrome.storage.local` 键中，不会进入 Work DevTools 业务数据、JSON 导出或 WebDAV 同步。
 
 - [版本发布规范](docs/releases/README.md)
+- [v1.0.3 版本说明](docs/releases/1.0.3.md)
 - [v1.0.2 版本说明](docs/releases/1.0.2.md)
 - [v1.0.1 版本说明](docs/releases/1.0.1.md)
 - [v1.0.0 版本说明](docs/releases/1.0.0.md)
@@ -143,7 +157,8 @@ git push origin v1.0.2
 | 样式 | Tailwind CSS 3 |
 | 图标 | lucide-vue-next |
 | 存储 | chrome.storage.local（本地） + NAS WebDAV（远端同步） |
-| 工具 | sharp（图标生成）、nanoid（ID 生成） |
+| 图片压缩 | @jsquash 系列 WASM、Canvas、TinyPNG |
+| 工具 | sharp（图标生成）、nanoid（ID 生成）、JSZip |
 
 ## 📖 使用说明
 
@@ -173,6 +188,14 @@ UA 覆盖需要 Chrome 的调试权限，只会作用于当前标签页，关闭
 6. 点击「复制完整地址」获得组合地址，或点击「跳转」在新标签页打开
 7. 项目设置了 Wiki 时，可选择复制地址或在新标签页打开
 
+### 图片压缩
+
+1. 右键扩展图标并选择「图片压缩」，或从管理页左侧进入该工具
+2. 选择「本地压缩」或「TinyPNG 云压缩」
+3. 拖入或点击选择图片，点击「全部压缩」
+4. 需要调整引擎或参数时进入「压缩设置」
+5. 压缩完成后可单张下载，也可勾选多项后下载 ZIP 包
+
 ### 导入 / 导出
 
 - **导出**：点击右上角 ⬆ 图标，下载全量 JSON 备份
@@ -182,7 +205,7 @@ UA 覆盖需要 Chrome 的调试权限，只会作用于当前标签页，关闭
 
 ```json
 {
-  "version": 2,
+  "version": 3,
   "updatedAt": 0,
   "tools": {
     "cookieInjector": {
@@ -196,12 +219,23 @@ UA 覆盖需要 Chrome 的调试权限，只会作用于当前标签页，关闭
     },
     "devAddresses": {
       "projects": []
+    },
+    "imageCompressor": {
+      "settings": {
+        "defaultEngine": "local",
+        "local": {
+          "pngOptimizeLevel": 3,
+          "jpegQuality": 80,
+          "webpQuality": 80,
+          "maxEdge": 0
+        }
+      }
     }
   }
 }
 ```
 
-旧版扁平 Cookie Injector 本机数据和 JSON 备份会在读取时自动包裹到 `tools.cookieInjector`；1.0.0 工作台数据缺少 `tools.devAddresses` 时会自动补为空工具数据。
+旧版扁平 Cookie Injector 本机数据和 JSON 备份会在读取时自动包裹到 `tools.cookieInjector`；旧工作台缺少 `tools.devAddresses` 或 `tools.imageCompressor` 时会自动补为默认工具数据。TinyPNG 多 Key 场景下 `imageCompressor.settings` 还会包含 `tinifyApiKeys`（Key 列表）与 `tinifyKeyUsage`（每把 Key 已用额度）。
 
 ### NAS 同步（WebDAV）
 
@@ -245,7 +279,7 @@ https://webdav.example.com/webdav/work-devtools-sync/
 |------|---------|------|
 | Work DevTools 工具数据 | `chrome.storage.local` | 使用统一根键持久化；首次升级自动迁移旧版 Cookie Injector 数据 |
 | 同步配置（地址、用户名、密码） | `chrome.storage.local` | 每台设备独立配置，不参与同步 |
-| Release 检查缓存 | `chrome.storage.local` | 每台设备独立保存，24 小时内复用；不参与导出或 WebDAV 同步 |
+| Release 检查缓存（含 ETag） | `chrome.storage.local` | 每台设备独立保存；不参与导出或 WebDAV 同步 |
 | 远端同步副本 | NAS WebDAV | `/webdav/work-devtools-sync/work-devtools-sync.json` |
 
 #### 安全说明
@@ -269,3 +303,5 @@ https://webdav.example.com/webdav/work-devtools-sync/
 ## 📝 License
 
 私有项目，仅供内部使用。
+
+你好 2026-10-22 16:46:49
