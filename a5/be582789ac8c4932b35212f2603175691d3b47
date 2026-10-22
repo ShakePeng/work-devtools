@@ -1,0 +1,28 @@
+README.md
+  s_e81ce33bda6a29::t_13150f3363a01e 306-307
+  s_6ff846a7ead53d::t_3668ebc984738d 5,7,30-39,54-57,132-134,141,146,160-161,191-198,208,222-232,238,282
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "a5be582789ac8c4932b35212f2603175691d3b47",
+  "prompts": {},
+  "sessions": {
+    "s_6ff846a7ead53d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12f10-fca5-78d0-84b5-ee01c83ba64d",
+        "model": "glm-5.3-flash"
+      },
+      "human_author": "ShakePeng <14865846+ShakePeng@users.noreply.github.com>"
+    },
+    "s_e81ce33bda6a29": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a162c9-f486-7741-be87-9e92d2b0c398",
+        "model": "deepseek-v4.1-flash"
+      },
+      "human_author": "ShakePeng <14865846+ShakePeng@users.noreply.github.com>"
+    }
+  }
+}
