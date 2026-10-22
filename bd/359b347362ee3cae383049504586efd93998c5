@@ -1,0 +1,19 @@
+README.md
+  s_e81ce33bda6a29::t_2cc21bd5f2c0bc 308-309
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "bd359b347362ee3cae383049504586efd93998c5",
+  "prompts": {},
+  "sessions": {
+    "s_e81ce33bda6a29": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a162c9-f486-7741-be87-9e92d2b0c398",
+        "model": "workbuddy-2/cn:deepseek-v4.1-flash"
+      },
+      "human_author": "ShakePeng <14865846+ShakePeng@users.noreply.github.com>"
+    }
+  }
+}
